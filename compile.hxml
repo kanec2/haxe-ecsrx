@@ -1,0 +1,30 @@
+-cp src
+-main Main
+
+-lib heaps
+-lib hlsdl
+-lib haxeui-heaps
+-lib haxe-concurrent
+-lib format
+-lib itertools
+-lib colyseus
+-lib tink_url
+-lib tink_http
+-lib tink_core
+-lib colyseus-websocket
+-lib haxe-injection
+
+-D concurrent
+-D resourcesPath=assets
+
+-D windowSize=1280x720
+#-D windowSize=1280x1024
+-D windowTitle=GoodGames | Community and Store HTML Game Template
+-D no-deprecation-warnings
+-hl build/heaps/hl/Main.hl
+#-hl build/cpp/out/main.c
+
+
+--cmd "D:\Dev\hashlink-1.14.0-win\hl build/heaps/hl/Main.hl"
+#--cmd '/home/unidev/Загрузки/hashlink-1.14/hl build/heaps/hl/Main.hl'
+
