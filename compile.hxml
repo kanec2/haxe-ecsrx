@@ -1,6 +1,9 @@
 -cp src
--main Main
+-main TestMain
 
+-lib RxHaxe
+-lib hscript
+-lib hlog
 -lib heaps
 -lib hlsdl
 -lib haxeui-heaps
