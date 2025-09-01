@@ -59,7 +59,7 @@ class EcsRxApplication implements IEcsRxApplication {
 			}
 		}
 		isRunning = true;
-		_applicationStartedSubject.onNext(this);
+		_applicationStartedSubject.on_next(this);
 		// Вызываем afterApplicationStarts для всех плагинов
 		for (plugin in plugins) {
 			try {
@@ -94,7 +94,7 @@ class EcsRxApplication implements IEcsRxApplication {
 			}
 		}
 		isRunning = false;
-		_applicationStoppedSubject.onNext(this);
+		_applicationStoppedSubject.on_next(this);
 		// Вызываем afterApplicationStops для всех плагинов
 		for (plugin in plugins) {
 			try {
@@ -148,7 +148,7 @@ class EcsRxApplication implements IEcsRxApplication {
 		collectionManager.dispose();
 		entityDatabase.dispose();
 		dependencyContainer.dispose();
-		_applicationStartedSubject.onCompleted();
-		_applicationStoppedSubject.onCompleted();
+		_applicationStartedSubject.on_completed();
+		_applicationStoppedSubject.on_completed();
 	}
 }

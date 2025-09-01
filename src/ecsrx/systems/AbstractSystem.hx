@@ -11,6 +11,6 @@ abstract class AbstractSystem implements ISystem {
 			this.priority = priority;
 	}
 
-	abstract public function startSystem():Void 
-    abstract public function stopSystem():Void
+	abstract public function startSystem():Void;
+    abstract public function stopSystem():Void;
 }

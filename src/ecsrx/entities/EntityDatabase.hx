@@ -19,13 +19,13 @@ class EntityDatabase implements IEntityDatabase {
 	public function createEntity(?name:String):Entity {
 		var entity = new Entity(_nextId++, name);
 		_entities.set(entity.id, entity);
-		_entityAddedSubject.onNext(entity);
+		_entityAddedSubject.on_next(entity);
 		return entity;
 	}
 
 	public function destroyEntity(entity:Entity):Void {
 		_entities.remove(entity.id);
-		_entityRemovedSubject.onNext(entity);
+		_entityRemovedSubject.on_next(entity);
 	}
 
 	public function getEntity(id:Int):Entity {
@@ -49,8 +49,8 @@ class EntityDatabase implements IEntityDatabase {
 	}
 
 	public function dispose():Void {
-		_entityAddedSubject.onCompleted();
-		_entityRemovedSubject.onCompleted();
-		_entityUpdatedSubject.onCompleted();
+		_entityAddedSubject.on_completed();
+		_entityRemovedSubject.on_completed();
+		_entityUpdatedSubject.on_completed();
 	}
 }

@@ -29,13 +29,13 @@ class Collection implements ICollection {
 	public function addEntity(entity:Entity):Void {
 		if (!entities.contains(entity) && _predicate(entity)) {
 			entities.push(entity);
-			_subject.onNext(entities.copy());
+			_subject.on_next(entities.copy());
 		}
 	}
 
 	public function removeEntity(entity:Entity):Void {
 		if (entities.remove(entity)) {
-			_subject.onNext(entities.copy());
+			_subject.on_next(entities.copy());
 		}
 	}
 
@@ -44,15 +44,15 @@ class Collection implements ICollection {
 		var matches = _predicate(entity);
 		if (matches && !contains) {
 			entities.push(entity);
-			_subject.onNext(entities.copy());
+			_subject.on_next(entities.copy());
 		} else if (!matches && contains) {
 			entities.remove(entity);
-			_subject.onNext(entities.copy());
+			_subject.on_next(entities.copy());
 		}
 	}
 
 	public function dispose():Void {
-		_subject.onCompleted();
+		_subject.on_completed();
 		entities = [];
 	}
 }

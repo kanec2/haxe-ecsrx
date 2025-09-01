@@ -11,4 +11,6 @@ interface IEntityDatabase {
 	function entityAdded():Observable<Entity>;
 	function entityRemoved():Observable<Entity>;
 	function entityUpdated():Observable<Entity>;
+
+	function dispose():Void; // Добавлено
 }

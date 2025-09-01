@@ -4,12 +4,13 @@ import ecsrx.entities.Entity;
 import ecsrx.entities.IEntityDatabase;
 import haxe.ds.StringMap;
 import rx.Subscription;
-
+import rx.disposables.ISubscription; 
+import rx.Observer;
 class CollectionManager implements ICollectionManager {
 	private var _collections:Array<Collection> = [];
 	private var _namedCollections:StringMap<Collection> = new StringMap();
 	private var _entityDatabase:IEntityDatabase;
-	private var _subscriptions:Array<Subscription> = [];
+	private var _subscriptions:Array<ISubscription> = [];
 
 	public function new(entityDatabase:IEntityDatabase) {
 		this._entityDatabase = entityDatabase;
@@ -17,9 +18,9 @@ class CollectionManager implements ICollectionManager {
 	}
 
 	private function subscribeToEntityEvents():Void {
-		var addedSub = _entityDatabase.entityAdded().subscribe(onEntityAdded);
-		var removedSub = _entityDatabase.entityRemoved().subscribe(onEntityRemoved);
-		var updatedSub = _entityDatabase.entityUpdated().subscribe(onEntityUpdated);
+		var addedSub = _entityDatabase.entityAdded().subscribe(Observer.create(onEntityAdded));
+		var removedSub = _entityDatabase.entityRemoved().subscribe(Observer.create(onEntityRemoved));
+		var updatedSub = _entityDatabase.entityUpdated().subscribe(Observer.create(onEntityUpdated));
 		_subscriptions.push(addedSub);
 		_subscriptions.push(removedSub);
 		_subscriptions.push(updatedSub);

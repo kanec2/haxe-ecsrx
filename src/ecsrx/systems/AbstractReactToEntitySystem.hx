@@ -4,7 +4,7 @@ import ecsrx.entities.Entity;
 import rx.Subscription;
 import rx.Observable;
 
-abstract class AbstractReactToEntitySystem extends AbstractSystem implements IReactToEntitySystem {
+class AbstractReactToEntitySystem extends AbstractSystem implements IReactToEntitySystem {
 	private var _subscription:Subscription;
 
 	public function new(?name:String, ?priority:Int) {
@@ -33,7 +33,11 @@ abstract class AbstractReactToEntitySystem extends AbstractSystem implements IRe
 		}
 	}
 
-	abstract public function reactToEntity():Observable<Entity>;
-		
-    abstract public function process(entity:Entity):Void;
+	public function reactToEntity():Observable<Entity> {
+		throw "reactToEntity() method must be implemented in subclass";
+	}
+
+	public function process(entity:Entity):Void {
+		throw "process() method must be implemented in subclass";
+	}
 }
