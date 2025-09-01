@@ -1,11 +1,13 @@
 package ecsrx.systems;
 
+import rx.Observer;
+import rx.disposables.ISubscription;
 import ecsrx.entities.Entity;
-import rx.Subscription;
+//import rx.ISubscription;
 import rx.Observable;
 
 class AbstractReactToEntitySystem extends AbstractSystem implements IReactToEntitySystem {
-	private var _subscription:Subscription;
+	private var _subscription:ISubscription;
 
 	public function new(?name:String, ?priority:Int) {
 		super(name, priority);
@@ -15,7 +17,8 @@ class AbstractReactToEntitySystem extends AbstractSystem implements IReactToEnti
 		super.startSystem();
 		var observable = reactToEntity();
 		if (observable != null) {
-			_subscription = observable.subscribe(process);
+			// Используем правильный Observer
+			_subscription = observable.subscribe(Observer.create(onEntityProcessed));
 		}
 	}
 
@@ -34,10 +37,10 @@ class AbstractReactToEntitySystem extends AbstractSystem implements IReactToEnti
 	}
 
 	public function reactToEntity():Observable<Entity> {
-		throw "reactToEntity() method must be implemented in subclass";
+		return null;
 	}
 
 	public function process(entity:Entity):Void {
-		throw "process() method must be implemented in subclass";
+		
 	}
 }

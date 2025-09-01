@@ -1,9 +1,9 @@
 package ecsrx.systems;
 
-import ecs.Collection;
+import ecsrx.collections.ICollection; 
 import rx.Observable;
 
 interface IReactToGroupSystem extends ISystem {
-	function reactToGroup():Observable<Collection>;
+	function reactToGroup():Observable<ICollection>;
     function process(collection:ICollection):Void;
 }

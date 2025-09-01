@@ -5,12 +5,12 @@ class AbstractSetupSystem extends AbstractSystem implements ISetupSystem {
 		super(name, priority);
 	}
 
-	public function startSystem():Void {
+	public override function startSystem():Void {
 		setup();
 	}
 
-	public function stopSystem():Void{
-		
+	public override function stopSystem():Void{
+
 	}
 
 	// Абстрактный метод - должен быть реализован в подклассах

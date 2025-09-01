@@ -1,6 +1,6 @@
 package ecsrx.systems;
 
-abstract class AbstractSystem implements ISystem {
+class AbstractSystem implements ISystem {
 	public var systemName:String;
 	public var priority:Int = 0;
 	public var enabled:Bool = true;
@@ -11,6 +11,13 @@ abstract class AbstractSystem implements ISystem {
 			this.priority = priority;
 	}
 
-	abstract public function startSystem():Void;
-    abstract public function stopSystem():Void;
+	public function startSystem():Void
+	{
+		trace('System ${systemName} started');
+	}
+
+    public function stopSystem():Void
+	{
+		trace('System ${systemName} stopped');
+	}
 }
