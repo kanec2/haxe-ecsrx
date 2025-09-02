@@ -2,7 +2,11 @@ package ecsrx.systems.examples;
 
 import ecsrx.systems.AbstractManualSystem;
 import ecsrx.entities.Entity;
-import ecsrx.types.Components;
+import ecsrx.systems.AbstractManualSystem;
+import ecsrx.entities.Entity;
+import ecsrx.types.PositionComponent;
+import ecsrx.types.MovementComponent;
+import ecsrx.types.PlayerComponent;
 
 class PlayerInputSystem extends AbstractManualSystem {
 	private var _entityDatabase:ecsrx.entities.IEntityDatabase;
@@ -16,7 +20,7 @@ class PlayerInputSystem extends AbstractManualSystem {
 	override public function update(elapsedTime:Float):Void {
 		// Находим игрока
 		var players = _entityDatabase.getEntities().filter(function(entity) {
-			return entity.hasComponent(Components.PlayerComponent);
+			return entity.hasComponent(PlayerComponent);
 		});
 		if (players.length > 0) {
 			var player = players[0];
@@ -25,11 +29,11 @@ class PlayerInputSystem extends AbstractManualSystem {
 	}
 
 	private function updatePlayerMovement(player:Entity, elapsedTime:Float):Void {
-		if (!player.hasComponent(Components.PositionComponent) || !player.hasComponent(Components.MovementComponent)) {
+		if (!player.hasComponent(PositionComponent) || !player.hasComponent(MovementComponent)) {
 			return;
 		}
-		var position = player.getComponent(Components.PositionComponent);
-		var movement = player.getComponent(Components.MovementComponent);
+		var position = player.getComponent(PositionComponent);
+		var movement = player.getComponent(MovementComponent);
 		// Сброс скорости
 		movement.velocityX = 0;
 		movement.velocityY = 0;

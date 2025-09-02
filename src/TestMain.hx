@@ -1,74 +1,150 @@
+import hxd.App;
 import ecsrx.framework.EcsRxApplication;
 import ecsrx.entities.Entity;
 import ecsrx.systems.examples.*;
 import ecsrx.plugins.CorePlugin;
+import ecsrx.plugins.HeapsPlugin;
+import ecsrx.plugins.*;
+import ecsrx.systems.HeapsRenderSystem;
+import ecsrx.systems.HeapsSpriteCleanupSystem;
+import ecsrx.systems.*;
+import ecsrx.types.PositionComponent;
+import ecsrx.types.HealthComponent;
+import ecsrx.types.PlayerComponent;
+import ecsrx.types.EnemyComponent;
+import ecsrx.types.SpriteComponent;
+import ecsrx.types.MovementComponent;
+import ecsrx.types.*;
 
-import ecsrx.types.Components;
+class TestMain extends hxd.App {
+	private var _ecsApp:EcsRxApplication;
+	private var _heapsPlugin:HeapsPlugin;
+	private var _hscriptPlugin:HScriptPlugin;
+	private var _haxeUIPlugin:HaxeUIPlugin;
 
-class TestMain {
-	public static function main() {
-		trace("Starting EcsRx game test...");
-		var app = new EcsRxApplication();
-		// Регистрируем плагин
-		app.registerPlugin(new CorePlugin()); // Создаем коллекцию для тестирования
-		var playerCollection = app.collectionManager.createCollection(function(entity) {
+	override function init() {
+		super.init();
+		trace("Initializing EcsRx with Heaps...");
+		// Создаем EcsRx приложение
+		_ecsApp = new EcsRxApplication();
+		// Создаем и регистрируем Heaps плагин
+		_heapsPlugin = new HeapsPlugin(s2d);
+		_hscriptPlugin = new HScriptPlugin();
+		_haxeUIPlugin = new HaxeUIPlugin();
+
+		_ecsApp.registerPlugin(_heapsPlugin);
+		_ecsApp.registerPlugin(_hscriptPlugin);
+		_ecsApp.registerPlugin(_haxeUIPlugin);
+		_ecsApp.registerPlugin(new CorePlugin());
+		// Создаем коллекцию игроков
+		var playerCollection = _ecsApp.collectionManager.createCollection(function(entity) {
 			return entity.hasComponent(PlayerComponent);
-		}, "players"); // Регистрируем игровые системы
-		var setupSystem = new ExampleSetupSystem(app.entityDatabase);
-		var healthSystem = new HealthSystem(app.entityDatabase);
-		var playerInputSystem = new PlayerInputSystem(app.entityDatabase);
-		var movementSystem = new MovementSystem(app.entityDatabase);
-		var collisionSystem = new CollisionSystem(app.entityDatabase);
+		}, "players");
+		// Регистрируем все системы
+		var setupSystem = new ExampleSetupSystem(_ecsApp.entityDatabase);
+		var healthSystem = new HealthSystem(_ecsApp.entityDatabase);
+		var playerInputSystem = new PlayerInputSystem(_ecsApp.entityDatabase);
+		var movementSystem = new MovementSystem(_ecsApp.entityDatabase);
+		var collisionSystem = new CollisionSystem(_ecsApp.entityDatabase);
 		var reactToGroupSystem = new ExampleReactToGroupSystem(playerCollection);
-		app.registerSystem(setupSystem);
-		app.registerSystem(healthSystem);
-		app.registerSystem(playerInputSystem);
-		app.registerSystem(movementSystem);
-		app.registerSystem(collisionSystem);
-		app.registerSystem(reactToGroupSystem); // Запускаем приложение
-		app.startApplication(); // Создаем игрока вручную для теста
-		createTestPlayer(app.entityDatabase); // Создаем врага для теста
-		createTestEnemy(app.entityDatabase); // Имитируем несколько обновлений
-		trace("Simulating 5 seconds of gameplay...");
-		for (i in 0...300) { // 300 кадров ~ 5 секунд при 60 FPS // Вызываем update для Manual систем
-			for (system in app.systems) {
+		// Heaps системы
+		var renderSystem = new HeapsRenderSystem(_ecsApp.entityDatabase, _heapsPlugin);
+		var spriteCleanupSystem = new HeapsSpriteCleanupSystem(_ecsApp.entityDatabase, _heapsPlugin);
+
+		var hscriptSystem = new HScriptSystem(_ecsApp.entityDatabase, _hscriptPlugin);
+		var scriptExecutionSystem = new ScriptExecutionSystem(_ecsApp.entityDatabase, _hscriptPlugin);
+
+		var haxeUISystem = new HaxeUISystem(_ecsApp.entityDatabase, _haxeUIPlugin);
+		//var haxeUIEntityInfoSystem = new HaxeUIEntityInfoSystem(_ecsApp.entityDatabase, _haxeUIPlugin);
+
+		_ecsApp.registerSystem(setupSystem);
+		_ecsApp.registerSystem(healthSystem);
+		_ecsApp.registerSystem(playerInputSystem);
+		_ecsApp.registerSystem(movementSystem);
+		_ecsApp.registerSystem(collisionSystem);
+		_ecsApp.registerSystem(reactToGroupSystem);
+		_ecsApp.registerSystem(renderSystem);
+		_ecsApp.registerSystem(spriteCleanupSystem);
+		_ecsApp.registerSystem(hscriptSystem);
+		_ecsApp.registerSystem(scriptExecutionSystem);
+		_ecsApp.registerSystem(haxeUISystem);
+		//_ecsApp.registerSystem(haxeUIEntityInfoSystem);
+
+		// Запускаем приложение
+		_ecsApp.startApplication();
+		// Создаем тестовые сущности
+		createTestEntities();
+	}
+
+	private function createTestEntities():Void {
+		// Создаем игрока
+		var player = _ecsApp.entityDatabase.createEntity("Player");
+		player.addComponent(new PositionComponent(400, 300));
+		player.addComponent(new HealthComponent(100));
+		player.addComponent(new PlayerComponent());
+		player.addComponent(new SpriteComponent("player.png", 32, 32));
+		player.addComponent(new MovementComponent(200));
+
+		var playerScript = new ScriptComponent();
+		playerScript.scriptCode = " 
+		// Пример скрипта для игрока 
+		if (typeof entity != 'undefined' && typeof elapsedTime != 'undefined') { 
+			// Можно получить доступ к компонентам 
+			var pos = entity.getComponent(PositionComponent); 
+			if (pos != null) { 
+				// Простая логика в скрипте 
+				// pos.x += Math.sin(elapsedTime) * 10; 
+			} 
+		} ";
+		player.addComponent(playerScript);
+
+		trace("Created player entity");
+		// Создаем несколько врагов
+		for (i in 0...5) {
+			var enemy = _ecsApp.entityDatabase.createEntity("Enemy_" + i);
+			enemy.addComponent(new PositionComponent(100 + i * 100, 100));
+			enemy.addComponent(new EnemyComponent(10, 0.5));
+			enemy.addComponent(new SpriteComponent("enemy.png", 32, 32));
+			enemy.addComponent(new HealthComponent(50));
+			enemy.addComponent(new MovementComponent(100));
+
+			var enemyScript = new ScriptComponent();
+			enemyScript.scriptCode = "
+			// Скрипт для врага 
+			var pos = entity.getComponent(PositionComponent); 
+			var mov = entity.getComponent(MovementComponent); 
+			if (pos != null && mov != null) { 
+				// Простое поведение 
+				mov.velocityX = Math.sin(entity.id * 0.1) * 50; 
+				mov.velocityY = Math.cos(entity.id * 0.1) * 50; 
+				} ";
+			enemy.addComponent(enemyScript);
+
+			trace("Created enemy entity " + i);
+		}
+	}
+
+	override function update(dt:Float) {
+		super.update(dt);
+		// Обновляем Manual системы EcsRx
+		if (_ecsApp != null && _ecsApp.isRunning) {
+			for (system in _ecsApp.systems) {
 				if (system.enabled && Std.isOfType(system, ecsrx.systems.IManualSystem)) {
 					var manualSystem:ecsrx.systems.IManualSystem = cast system;
-					manualSystem.update(1 / 60); // Примерный deltaTime
-				}
-			} // Периодически выводим состояние игрока
-			if (i % 60 == 0) {
-				var players = app.entityDatabase.getEntities().filter(function(e) {
-					return e.hasComponent(PlayerComponent);
-				});
-				if (players.length > 0) {
-					var player = players[0];
-					var pos = player.getComponent(PositionComponent);
-					var health = player.getComponent(HealthComponent);
-					trace('Player at (${pos.x}, ${pos.y}), Health: ${health.currentHealth}/${health.maxHealth}');
+					manualSystem.update(dt);
 				}
 			}
 		}
-		app.dispose();
-		trace("Game test completed successfully!");
 	}
 
-	private static function createTestPlayer(entityDatabase:ecsrx.entities.IEntityDatabase):Void {
-		var player = entityDatabase.createEntity("Player");
-		player.addComponent(new PositionComponent(100, 100));
-		player.addComponent(new HealthComponent(100));
-		player.addComponent(new PlayerComponent());
-		player.addComponent(new SpriteComponent("player.png"));
-		player.addComponent(new MovementComponent(200));
-		trace("Created test player");
+	override function dispose() {
+		super.dispose();
+		if (_ecsApp != null) {
+			_ecsApp.dispose();
+		}
 	}
 
-	private static function createTestEnemy(entityDatabase:ecsrx.entities.IEntityDatabase):Void {
-		var enemy = entityDatabase.createEntity("Enemy");
-		enemy.addComponent(new PositionComponent(150, 150));
-		enemy.addComponent(new EnemyComponent(5, 0.5));
-		enemy.addComponent(new SpriteComponent("enemy.png"));
-		enemy.addComponent(new HealthComponent(50));
-		trace("Created test enemy");
+	static function main() {
+		new TestMain();
 	}
 }
