@@ -20,7 +20,7 @@ class TestMain {
 		var movementSystem = new MovementSystem(app.entityDatabase);
 		var collisionSystem = new CollisionSystem(app.entityDatabase);
 		var reactToGroupSystem = new ExampleReactToGroupSystem(playerCollection);
-		app.registerSystem(setupSystem);
+		app.registerSystem(setupSystem); 
 		app.registerSystem(healthSystem);
 		app.registerSystem(playerInputSystem);
 		app.registerSystem(movementSystem);
