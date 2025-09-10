@@ -30,4 +30,6 @@ class Entity {
 		var name = Type.getClassName(componentClass);
 		_components.remove(name);
 	}
+
+	public function getAllComponents():Array<Dynamic> { var result = []; for (component in _components) { result.push(component); } return result; }
 }

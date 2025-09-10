@@ -1,0 +1,3 @@
+package systemsrx.microrx.events; #if (threads || sys) import rx.Observable; #end /** * Interface for receiving messages in Haxe. * Haxe cannot easily get Class<T> from T at runtime, so we pass the type explicitly. */ interface IMessageReceiverHx {/** * Subscribe to messages of a specific type. * @param type The class type of the message to receive. * @return An observable sequence of messages of type T. */ function receive<T>(type:Class<T>):Observable<T>;
+
+}

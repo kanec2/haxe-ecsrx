@@ -2,7 +2,7 @@ package ecsrx.systems.examples;
 
 import ecsrx.systems.AbstractManualSystem;
 import ecsrx.entities.Entity;
-import ecsrx.types.Components;
+import ecsrx.types.*;
 
 class MovementSystem extends AbstractManualSystem {
 	private var _entityDatabase:ecsrx.entities.IEntityDatabase;
@@ -15,15 +15,15 @@ class MovementSystem extends AbstractManualSystem {
 	override public function update(elapsedTime:Float):Void {
 		var entities = _entityDatabase.getEntities();
 		for (entity in entities) {
-			if (entity.hasComponent(Components.PositionComponent) && entity.hasComponent(Components.MovementComponent)) {
+			if (entity.hasComponent(PositionComponent) && entity.hasComponent(MovementComponent)) {
 				updateEntityPosition(entity, elapsedTime);
 			}
 		}
 	}
 
 	private function updateEntityPosition(entity:Entity, elapsedTime:Float):Void {
-		var position = entity.getComponent(Components.PositionComponent);
-		var movement = entity.getComponent(Components.MovementComponent);
+		var position = entity.getComponent(PositionComponent);
+		var movement = entity.getComponent(MovementComponent);
 		// Ограничиваем скорость
 		var speed = Math.sqrt(movement.velocityX * movement.velocityX + movement.velocityY * movement.velocityY);
 		if (speed > movement.maxSpeed) {

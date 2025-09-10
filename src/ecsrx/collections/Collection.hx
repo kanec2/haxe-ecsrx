@@ -10,9 +10,12 @@ class Collection implements ICollection {
 
 	private var _subject:Behavior<Array<Entity>>;
 	private var _predicate:Entity->Bool;
+	private var _name:String;
 
-	public function new(?predicate:Entity->Bool) {
+
+	public function new(?predicate:Entity->Bool, ?name:String) {
 		this._predicate = predicate != null ? predicate : (e) -> true;
+		this._name = name;
 		this.entities = [];
 		this._subject = new Behavior([]);
 		this.observable = _subject;
@@ -26,22 +29,32 @@ class Collection implements ICollection {
 		return entities.length;
 	}
 
+	public function getName():String {
+		return _name;
+	}
+
+	// Методы для управления составом коллекции
 	public function addEntity(entity:Entity):Void {
 		if (!entities.contains(entity) && _predicate(entity)) {
 			entities.push(entity);
-			_subject.on_next(entities.copy());
+			notifyChange();
 		}
 	}
 
 	public function removeEntity(entity:Entity):Void {
 		if (entities.remove(entity)) {
-			_subject.on_next(entities.copy());
+			notifyChange();
 		}
 	}
 
+	private function notifyChange():Void { 
+		_subject.onNext(entities.copy()); 
+	}
+	
 	public function updateEntity(entity:Entity):Void {
 		var contains = entities.contains(entity);
 		var matches = _predicate(entity);
+		
 		if (matches && !contains) {
 			entities.push(entity);
 			_subject.on_next(entities.copy());
