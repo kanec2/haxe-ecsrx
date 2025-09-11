@@ -16,6 +16,7 @@
 -lib tink_core
 -lib colyseus-websocket
 -lib haxe-injection
+-lib utest
 
 -D concurrent
 -D resourcesPath=assets
