@@ -2,7 +2,7 @@ package tests.systemsrx.handlers;
 
 import utest.Assert;
 import utest.Test;
-import systemsrx.executor.handlers.ManualSystemHandler;
+import systemsrx.executor.handlers.conventional.ManualSystemHandler;
 import systemsrx.systems.conventional.IManualSystem;
 import systemsrx.systems.ISystem;
 
@@ -11,23 +11,8 @@ import systemsrx.systems.ISystem;
  */
 class ManualSystemHandlerTest extends Test {
 	// Фиктивные реализации
-	class FakeManualSystem implements IManualSystem {
-		public var startSystemCalled:Bool = false;
-		public var stopSystemCalled:Bool = false;
-
-		public function new() {}
-
-		public function startSystem():Void {
-			startSystemCalled = true;
-		}
-
-		public function stopSystem():Void {
-			stopSystemCalled = true;
-		}
-	}
-	class FakeNonManualSystem implements ISystem {
-		public function new() {}
-	}
+	
+	
 	public function test_should_correctly_handle_systems() {
 		var handler = new ManualSystemHandler();
 

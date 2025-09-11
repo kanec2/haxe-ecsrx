@@ -2,39 +2,41 @@ package systemsrx.computeds.data;
 
 #if (threads || sys)
 import rx.Observable;
+import rx.Observer;
 import rx.Subject;
 import rx.disposables.ISubscription;
 import rx.observers.IObserver;
-import haxe.concurrent.lock.Semaphore;
-// Для синхронизации
+import hx.concurrent.lock.Semaphore; // Для синхронизации
 #end
 import systemsrx.computeds.IComputed;
-import systemsrx.computeds.Unit; /** * Abstract base class for a computed value that is derived from a data source. * The computation is triggered by an observable signal. * @typeparam TOutput The type of the computed value. * @typeparam TInput The type of the data source. */
+import systemsrx.computeds.Unit;
 
-class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /*implements IDisposable*/ {
-	#if (threads || sys)
+/** 
+ * Abstract base class for a computed value that is derived from a data source. 
+ * The computation is triggered by an observable signal. 
+ * @typeparam TOutput The type of the computed value. 
+ * @typeparam TInput The type of the data source. 
+ */
+abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /*implements IDisposable*/ {
+	#if (concurrent || sys)
 	public var cachedData:TOutput;
 
 	final subscriptions:Array<ISubscription>;
 	final onDataChanged:Subject<TOutput>;
 	var needsUpdate:Bool;
-	final lock:Semaphore;
+	final lock:Semaphore; // Используем Semaphore как Mutex
 
-	// Используем Semaphore как Mutex
 	public var dataSource(default, null):TInput;
 
 	public function new(dataSource:TInput) {
 		this.dataSource = dataSource;
 		this.subscriptions = [];
-		this.onDataChanged = new rx.Subject<TOutput>();
-		// Subject.create<TOutput>()
-		this.needsUpdate = true;
-		// Нужно обновить при первом запросе значения
-		this.lock = new Semaphore(1, 1);
-		// Бинарный семафор для взаимного исключения
+		this.onDataChanged = new rx.Subject<TOutput>(); // Subject.create<TOutput>()
+		this.needsUpdate = true; // Нужно обновить при первом запросе значения
+		this.lock = new Semaphore(1); // Бинарный семафор для взаимного исключения
+
 		monitorChanges();
-		// refreshData();
-		// Не вызываем сразу, пусть GetData сделает это при первом запросе
+		// refreshData(); // Не вызываем сразу, пусть GetData сделает это при первом запросе
 	}
 
 	// Реализация Observable<TOutput>
@@ -51,9 +53,22 @@ class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /*implemen
 
 	public function monitorChanges():Void {
 		// Подписываемся на сигнал обновления и вызываем requestUpdate
-		var subscription:ISubscription = refreshWhen().subscribe(function(unit:Unit) {
-			requestUpdate();
-		});
+		// ИСПРАВЛЕНИЕ: Используем Observer.create для создания IObserver из функций
+		var subscription:ISubscription = refreshWhen().subscribe(Observer.create( // onCompleted
+			function():Void {
+				// В данном случае ничего не делаем при завершении источника
+			}, // onError
+			function(error:String):Void {
+				// Обрабатываем ошибку источника, если необходимо.
+				// Для простоты, можно логировать или игнорировать.
+				// requestUpdate() не вызываем, так как это не "нормальное" обновление.
+				#if debug
+				trace("Error in ComputedFromData refreshWhen observable: " + error);
+				#end
+			}, // onNext
+			function(unit:Unit):Void {
+				requestUpdate();
+			}));
 		subscriptions.push(subscription);
 	}
 
@@ -69,18 +84,42 @@ class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /*implemen
 
 	public function refreshData():Void {
 		lock.acquire();
+		// Копируем логику try-finally вручную
+		var hasError = false;
+		var errorValue:Dynamic = null;
 		try {
 			cachedData = transform(dataSource);
 			needsUpdate = false;
+		} catch (e:Dynamic) {
+			// Сохраняем информацию об ошибке
+			hasError = true;
+			errorValue = e;
 		}
-		finally
-		{
-			lock.release();
+		// Завершающие действия вне блока try
+		lock.release();
+
+		// Если была ошибка, пробрасываем её после освобождения ресурсов
+		if (hasError) {
+			throw errorValue;
 		}
+
 		// Уведомляем подписчиков о новом значении
 		// Используем правильное имя метода из RxHaxe Subject
 		onDataChanged.on_next(cachedData);
-	} /** * The method to indicate when the computation should be updated. * @return An observable trigger that should trigger when the computation should refresh. */ public abstract function refreshWhen():Observable<Unit>; /** * The method to generate the computed value from the data source. * @param dataSource The source of data to work off. * @return The transformed data. */ public abstract function transform(dataSource:TInput):TOutput;
+	}
+
+	/** 
+	 * The method to indicate when the computation should be updated. 
+	 * @return An observable trigger that should trigger when the computation should refresh. 
+	 */
+	public abstract function refreshWhen():Observable<Unit>;
+
+	/** 
+	 * The method to generate the computed value from the data source. 
+	 * @param dataSource The source of data to work off. 
+	 * @return The transformed data. 
+	 */
+	public abstract function transform(dataSource:TInput):TOutput;
 
 	public function getData():TOutput {
 		if (needsUpdate) {
@@ -93,18 +132,15 @@ class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /*implemen
 		// Отписываемся от всех подписок
 		for (subscription in subscriptions) {
 			if (subscription != null) {
-				subscription.unsubscribe();
-				// Используем правильное имя метода
+				subscription.unsubscribe(); // Используем правильное имя метода
 			}
 		}
-		subscriptions.resize(0);
-		// Очищаем массив
+		subscriptions.resize(0); // Очищаем массив
+
 		// Отписываем и уничтожаем Subject
 		if (onDataChanged != null) {
-			onDataChanged.on_completed();
-			// Завершаем Subject
-			// onDataChanged = null;
-			// Нельзя присвоить null final полю
+			onDataChanged.on_completed(); // Завершаем Subject
+			// onDataChanged = null; // Нельзя присвоить null final полю
 		}
 	}
 	#else

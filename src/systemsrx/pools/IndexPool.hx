@@ -1,6 +1,6 @@
 package systemsrx.pools;
 
-#if (threads || sys)
+#if (concurrent || sys)
 // Используем Semaphore из haxe-concurrent для синхронизации
 import hx.concurrent.lock.Semaphore;
 #end
@@ -10,7 +10,7 @@ import hx.concurrent.lock.Semaphore;
  * * Indexes are allocated from a stack (LIFO) and can be released back to the pool. 
 **/
 class IndexPool implements IPool<Int> {
-	#if (threads || sys)
+	#if (concurrent || sys)
 	final semaphore:Semaphore;
 	#end
 
@@ -31,8 +31,8 @@ class IndexPool implements IPool<Int> {
 	 * * @param startingSize The initial size of the pool. Default is 1000. 
 	**/
 	public function new(increaseSize:Int = 100, startingSize:Int = 1000) {
-		#if (threads || sys) // Бинарный семафор для взаимного исключения (Mutex)
-		semaphore = new Semaphore(1, 1); #end lastMax = startingSize;
+		#if (concurrent || sys) // Бинарный семафор для взаимного исключения (Mutex)
+		semaphore = new Semaphore(1); #end lastMax = startingSize;
 		_incrementSize = increaseSize;
 		availableIndexes = [];
 
@@ -54,7 +54,7 @@ class IndexPool implements IPool<Int> {
 	}
 
 	public function allocateInstance():Int {
-		#if (threads || sys) semaphore.acquire(); #end
+		#if (concurrent || sys) semaphore.acquire(); #end
 		try {
 			if (availableIndexes.length == 0) {
 				expand();
@@ -66,10 +66,10 @@ class IndexPool implements IPool<Int> {
 			var index = availableIndexes.pop();
 			return index != null ? index : throw "No index available after check";
 		} catch (e:Dynamic) {
-			#if (threads || sys) semaphore.release(); #end
+			#if (concurrent || sys) semaphore.release(); #end
 			throw e;
 		}
-		#if (threads || sys) semaphore.release(); #end
+		#if (concurrent || sys) semaphore.release(); #end
 	}
 
 	public function releaseInstance(index:Int):Void {
@@ -77,7 +77,7 @@ class IndexPool implements IPool<Int> {
 			throw "Index must be >= 0";
 		}
 		var result:Int = 0;
-		#if (threads || sys) semaphore.acquire(); #end
+		#if (concurrent || sys) semaphore.acquire(); #end
 		try {
 			if (index > lastMax) {
 				expand(index);
@@ -88,12 +88,12 @@ class IndexPool implements IPool<Int> {
 				availableIndexes.push(index);
 			}
 		} catch (e:Dynamic) {
-			#if (threads || sys) semaphore.release();
+			#if (concurrent || sys) semaphore.release();
 			// Освобождаем до re-throw
 			#end throw e; // Повторно бросаем исключение
 		}
 
-		{#if (threads || sys) semaphore.release(); #end}
+		{#if (concurrent || sys) semaphore.release(); #end}
 	}
 
 	/** * Expands the pool. * @param newIndex Optional. If provided, expands the pool to include this index. */
@@ -169,18 +169,18 @@ class IndexPool implements IPool<Int> {
 
 	/** * Clears the pool, removing all available indexes. */
 	public function clear():Void {
-		#if (threads || sys) semaphore.acquire(); #end
+		#if (concurrent || sys) semaphore.acquire(); #end
 		try {
 			lastMax = 0;
 			availableIndexes.resize(0);
 			// Очищаем массив
 			// В C# было AvailableIndexes.Clear();
 		} catch (e:Dynamic) {
-			#if (threads || sys) semaphore.release(); #end
+			#if (concurrent || sys) semaphore.release(); #end
 			throw e;
 		}
 
-		#if (threads || sys) semaphore.release(); #end
+		#if (concurrent || sys) semaphore.release(); #end
 	}
 
 	// Реализация IPool<Int>.releaseInstance уже есть, она принимает Int.

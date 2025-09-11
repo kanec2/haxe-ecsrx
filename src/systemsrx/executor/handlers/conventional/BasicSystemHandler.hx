@@ -1,6 +1,6 @@
 package systemsrx.executor.handlers.conventional;
 
-#if (threads || sys)
+#if (concurrent || sys)
 import rx.Observable;
 import rx.disposables.ISubscription;
 import systemsrx.scheduling.IUpdateScheduler;
@@ -14,7 +14,7 @@ import systemsrx.systems.conventional.IBasicSystem;
 
 // Устанавливаем приоритет, как в C#
 class BasicSystemHandler implements IConventionalSystemHandler {
-	#if (threads || sys)
+	#if (concurrent || sys)
 	public final updateScheduler:IUpdateScheduler;
 	// Используем Map из Haxe и ISubscription из RxHaxe
 	public final systemSubscriptions:Map<ISystem, ISubscription>;

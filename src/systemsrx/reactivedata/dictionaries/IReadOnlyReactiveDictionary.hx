@@ -1,4 +1,4 @@
-package systemsrx.reactivedata.dictionaries; #if (threads || sys) import rx.Observable; #end import systemsrx.computeds.Unit;
+package systemsrx.reactivedata.dictionaries; #if (concurrent || sys) import rx.Observable; #end import systemsrx.computeds.Unit;
 
 // Используем Unit из computeds
 

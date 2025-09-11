@@ -1,6 +1,6 @@
 package systemsrx.microrx.events;
 
-#if (threads || sys)
+#if (concurrent || sys)
 import rx.Observable;
 import rx.Subject;
 import haxe.concurrent.lock.Semaphore;
@@ -12,7 +12,7 @@ import Type;
 
 /** * Message broker implementation. * This code is adapted from UniRx project by neuecc (https://github.com/neuecc/UniRx). */
 class MessageBroker implements IMessageBroker /*implements Disposable*/ {
-	#if (threads || sys) /** * MessageBroker in Global scope. */
+	#if (concurrent || sys) /** * MessageBroker in Global scope. */
 	public static final defaultInstance:IMessageBroker = new MessageBroker();
 
 	private var isDisposed:Bool = false;

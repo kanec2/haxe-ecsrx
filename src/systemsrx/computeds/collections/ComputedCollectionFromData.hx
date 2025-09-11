@@ -1,4 +1,4 @@
-package systemsrx.computeds.collections; #if (threads || sys) import rx.Observable;
+package systemsrx.computeds.collections; #if (concurrent || sys) import rx.Observable;
 
 import rx.Subject;
 import rx.disposables.ISubscription;
@@ -8,7 +8,7 @@ import haxe.concurrent.lock.Semaphore;
 #end import systemsrx.computeds.Unit; /** * Abstract base class for a computed collection that is derived from a data source. * @typeparam TInput The type of the data source. * @typeparam TOutput The type of elements in the computed collection. */ class ComputedCollectionFromData<TInput,
 	TOutput> implements IComputedCollection<TOutput> /*implements IDisposable*/ {
 
-	#if (threads || sys)
+	#if (concurrent || sys)
 	public var computedData:Array<TOutput>;
 	public var subscriptions:Array<ISubscription>;
 	public var dataSource(default, null):TInput;

@@ -1,4 +1,4 @@
-package tests.systemsrx.reactivedata;
+package tests.systemsrx.plugins.reactivedata;
 
 import utest.Assert;
 import utest.Test;

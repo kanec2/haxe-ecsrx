@@ -1,4 +1,4 @@
-package systemsrx.microrx.events; #if (threads || sys) import rx.Observable;
+package systemsrx.microrx.events; #if (concurrent || sys) import rx.Observable;
 
 import rx.Subject;
 import haxe.concurrent.lock.Semaphore;

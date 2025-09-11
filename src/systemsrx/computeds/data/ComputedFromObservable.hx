@@ -1,6 +1,6 @@
 package systemsrx.computeds.data;
 
-#if (threads || sys)
+#if (concurrent || sys)
 import rx.Observable;
 import rx.Subject;
 import rx.disposables.ISubscription;
@@ -10,7 +10,7 @@ import haxe.concurrent.lock.Semaphore;
 #end import systemsrx.computeds.IComputed; /** * Abstract base class for a computed value that is derived from an observable data source. * The computation is triggered whenever the observable emits a new value. * @typeparam TOutput The type of the computed value. * @typeparam TInput The type of the data emitted by the observable source. */ class ComputedFromObservable<TOutput,
 	TInput> implements IComputed<TOutput> /*implements IDisposable*/ {
 
-	#if (threads || sys)
+	#if (concurrent || sys)
 	public var cachedData:TOutput;
 
 	final subscriptions:Array<ISubscription>;

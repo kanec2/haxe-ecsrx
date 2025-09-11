@@ -1,6 +1,6 @@
 package systemsrx.executor.handlers.conventional;
 
-#if (threads || sys)
+#if (concurrent || sys)
 import rx.disposables.ISubscription;
 import rx.disposables.CompositeDisposable;
 import systemsrx.events.IEventSystem;
@@ -18,7 +18,7 @@ import systemsrx.systems.conventional.IReactToEventSystem;
 @:priority(6)
 // Устанавливаем приоритет, как в C#
 class ReactToEventSystemHandler implements IConventionalSystemHandler {
-	#if (threads || sys)
+	#if (concurrent || sys)
 	public final eventSystem:IEventSystem;
 	// Используем CompositeDisposable для управления несколькими подписками на систему
 	public final systemSubscriptions:Map<ISystem, CompositeDisposable>;

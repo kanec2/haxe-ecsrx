@@ -1,10 +1,18 @@
-package systemsrx.reactivedata.collections; /** * Event structure for when an item is removed from a collection. * @typeparam T The type of the item. */ @:structInit class CollectionRemoveEvent<T> /*implements IEquatable<CollectionRemoveEvent<T>>*/ {
+package systemsrx.reactivedata.collections;
 
+/** 
+ * Event structure for when an item is removed from a collection. 
+ * @typeparam T The type of the item. 
+ */
+@:structInit
+class CollectionRemoveEvent<T> /*implements IEquatable<CollectionRemoveEvent<T>>*/ {
 	public var index(default, null):Int;
+
 	public var value(default, null):T;
 
 	public function new(index:Int, value:T) {
 		this.index = index;
+
 		this.value = value;
 	}
 
@@ -13,16 +21,43 @@ package systemsrx.reactivedata.collections; /** * Event structure for when an it
 	}
 
 	public function hashCode():Int {
-		// В C# было: Index.GetHashCode() ^ EqualityComparer<T>.Default.GetHashCode(Value) << 2;
-		var valueHash = (value != null) ? (try value.hashCode() catch (e:Dynamic) Std.string(value).length) : 0;
-		return (index * 31) ^ (valueHash << 2);
+		// Простая реализация hashCode без использования value.hashCode()
+		var indexHash = (index * 31);
+		var valueHash = 0;
+		if (value != null) {
+			if (Reflect.hasField(value, "hashCode") && Reflect.isFunction(Reflect.field(value, "hashCode"))) {
+				try {
+					valueHash = Reflect.callMethod(value, Reflect.field(value, "hashCode"), []);
+				} catch (e:Dynamic) {
+					valueHash = Std.string(value).length;
+				}
+			} else {
+				valueHash = Std.string(value).length;
+			}
+			valueHash = valueHash << 2;
+		}
+		return indexHash ^ valueHash;
 	}
 
 	public function equals(other:CollectionRemoveEvent<T>):Bool {
 		if (other == null)
 			return false;
-		// В C# было: Index.Equals(other.Index) && EqualityComparer<T>.Default.Equals(Value, other.Value);
-		return (index == other.index)
-			&& (value == other.value || (value != null && other.value != null && value.equals != null && value.equals(other.value)));
+		if (index != other.index)
+			return false;
+
+		if (value == null && other.value == null)
+			return true;
+		if (value == null || other.value == null)
+			return false;
+
+		if (Reflect.hasField(value, "equals") && Reflect.isFunction(Reflect.field(value, "equals"))) {
+			try {
+				return Reflect.callMethod(value, Reflect.field(value, "equals"), [other.value]);
+			} catch (e:Dynamic) {
+				return value == other.value;
+			}
+		} else {
+			return value == other.value;
+		}
 	}
 }

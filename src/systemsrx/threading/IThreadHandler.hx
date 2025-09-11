@@ -1,5 +1,5 @@
 package systemsrx.threading;
-#if (threads || sys) import hx.concurrent.Future; #end
+#if (concurrent || sys) import hx.concurrent.Future; #end
 /** * Interface for handling threading operations in a cross-platform way. */
 interface IThreadHandler {
 	/** * Executes a parallel for loop from start (inclusive) to end (exclusive). 
@@ -14,7 +14,7 @@ interface IThreadHandler {
 	 * * @param process The function to run asynchronously. 
      * @return A Future representing the asynchronous operation.
 	**/
-    #if (threads || sys)
+    #if (concurrent || sys)
     function run(process:Void->Void):Future<Dynamic>; // Используем Future из haxe-concurrent
     #else
 	// На платформах без потоков возвращаем CompletedFuture

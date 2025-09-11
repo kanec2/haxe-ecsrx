@@ -1,6 +1,6 @@
 package systemsrx.systems;
 
-public interface ISystem
+interface ISystem
     {
         
     }

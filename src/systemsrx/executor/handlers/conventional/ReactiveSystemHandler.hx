@@ -1,6 +1,6 @@
 package systemsrx.executor.handlers.conventional;
 
-#if (threads || sys)
+#if (concurrent || sys)
 import rx.disposables.ISubscription;
 import rx.disposables.CompositeDisposable;
 import systemsrx.systems.ISystem;
@@ -13,7 +13,7 @@ import systemsrx.systems.conventional.IReactiveSystem;
 @:priority(6)
 // Устанавливаем приоритет, как в C#
 class ReactiveSystemHandler implements IConventionalSystemHandler {
-	#if (threads || sys)
+	#if (concurrent || sys)
 	// public final setupSystemGenericMethodInfo:Dynamic;
 	// Заглушка для рефлексии
 	// Используем CompositeDisposable для управления несколькими подписками на систему

@@ -1,5 +1,11 @@
-package systemsrx.reactivedata.collections; /** * Event structure for when an item is replaced in a collection. * @typeparam T The type of the item. */ @:structInit class CollectionReplaceEvent<T> /*implements IEquatable<CollectionReplaceEvent<T>>*/ {
+package systemsrx.reactivedata.collections;
 
+/** 
+ * Event structure for when an item is replaced in a collection. 
+ * @typeparam T The type of the item. 
+ */
+@:structInit
+class CollectionReplaceEvent<T> /*implements IEquatable<CollectionReplaceEvent<T>>*/ {
 	public var index(default, null):Int;
 	public var oldValue(default, null):T;
 	public var newValue(default, null):T;
@@ -15,23 +21,90 @@ package systemsrx.reactivedata.collections; /** * Event structure for when an it
 	}
 
 	public function hashCode():Int {
-		// В C# было: Index.GetHashCode() ^ EqualityComparer<T>.Default.GetHashCode(OldValue) << 2 ^ EqualityComparer<T>.Default.GetHashCode(NewValue) >> 2;
+		// Простая реализация hashCode без использования value.hashCode()
 		var indexHash = index;
-		var oldValueHash = (oldValue != null) ? (try oldValue.hashCode() catch (e:Dynamic) Std.string(oldValue).length) : 0;
-		oldValueHash = oldValueHash << 2;
-		var newValueHash = (newValue != null) ? (try newValue.hashCode() catch (e:Dynamic) Std.string(newValue).length) : 0;
-		newValueHash = newValueHash >> 2;
+		var oldValueHash = 0;
+		var newValueHash = 0;
+
+		if (oldValue != null) {
+			if (Reflect.hasField(oldValue, "hashCode") && Reflect.isFunction(Reflect.field(oldValue, "hashCode"))) {
+				try {
+					oldValueHash = Reflect.callMethod(oldValue, Reflect.field(oldValue, "hashCode"), []);
+				} catch (e:Dynamic) {
+					oldValueHash = Std.string(oldValue).length;
+				}
+			} else {
+				oldValueHash = Std.string(oldValue).length;
+			}
+			oldValueHash = oldValueHash << 2;
+		}
+
+		if (newValue != null) {
+			if (Reflect.hasField(newValue, "hashCode") && Reflect.isFunction(Reflect.field(newValue, "hashCode"))) {
+				try {
+					newValueHash = Reflect.callMethod(newValue, Reflect.field(newValue, "hashCode"), []);
+				} catch (e:Dynamic) {
+					newValueHash = Std.string(newValue).length;
+				}
+			} else {
+				newValueHash = Std.string(newValue).length;
+			}
+			newValueHash = newValueHash >> 2;
+		}
+
 		return indexHash ^ oldValueHash ^ newValueHash;
 	}
 
 	public function equals(other:CollectionReplaceEvent<T>):Bool {
 		if (other == null)
 			return false;
-		// В C# было: Index.Equals(other.Index) && EqualityComparer<T>.Default.Equals(OldValue, other.OldValue) && EqualityComparer<T>.Default.Equals(NewValue, other.NewValue);
-		return (index == other.index)
-			&& (oldValue == other.oldValue
-				|| (oldValue != null && other.oldValue != null && oldValue.equals != null && oldValue.equals(other.oldValue)))
-			&& (newValue == other.newValue
-				|| (newValue != null && other.newValue != null && newValue.equals != null && newValue.equals(other.newValue)));
+		if (index != other.index)
+			return false;
+
+		// Сравнение oldValue
+		if (oldValue == null && other.oldValue == null) {
+			// Оба null - OK
+		} else if (oldValue == null || other.oldValue == null) {
+			// Один null, другой нет - не равны
+			return false;
+		} else {
+			// Оба не null - сравниваем
+			var oldValuesEqual = false;
+			if (Reflect.hasField(oldValue, "equals") && Reflect.isFunction(Reflect.field(oldValue, "equals"))) {
+				try {
+					oldValuesEqual = Reflect.callMethod(oldValue, Reflect.field(oldValue, "equals"), [other.oldValue]);
+				} catch (e:Dynamic) {
+					oldValuesEqual = oldValue == other.oldValue;
+				}
+			} else {
+				oldValuesEqual = oldValue == other.oldValue;
+			}
+			if (!oldValuesEqual)
+				return false;
+		}
+
+		// Сравнение newValue
+		if (newValue == null && other.newValue == null) {
+			// Оба null - OK
+			return true;
+		} else if (newValue == null || other.newValue == null) {
+			// Один null, другой нет - не равны
+			return false;
+		} else {
+			// Оба не null - сравниваем
+			var newValuesEqual = false;
+			if (Reflect.hasField(newValue, "equals") && Reflect.isFunction(Reflect.field(newValue, "equals"))) {
+				try {
+					newValuesEqual = Reflect.callMethod(newValue, Reflect.field(newValue, "equals"), [other.newValue]);
+				} catch (e:Dynamic) {
+					newValuesEqual = newValue == other.newValue;
+				}
+			} else {
+				newValuesEqual = newValue == other.newValue;
+			}
+			return newValuesEqual;
+		}
+
+		return true;
 	}
 }

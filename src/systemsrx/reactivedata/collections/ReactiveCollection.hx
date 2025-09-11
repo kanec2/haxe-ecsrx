@@ -1,16 +1,23 @@
-package systemsrx.reactivedata.collections; #if (threads || sys) import rx.Observable;
+package systemsrx.reactivedata.collections;
 
+#if (concurrent || sys)
+import rx.Observable;
 import rx.Subject;
-import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
+import rx.disposables.ISubscription;
+#end
+import systemsrx.computeds.Unit; // Используем Unit из computeds
 
-// Используем Unit из computeds
-
-/** * Reactive collection implementation. * This code is adapted from UniRx project by neuecc (https://github.com/neuecc/UniRx). * @typeparam T The type of elements in the collection. */
-@:keep class ReactiveCollection<T> implements IReactiveCollection<T> {
-	#if (threads || sys)
+/** 
+ * Reactive collection implementation. 
+ * This code is adapted from UniRx project by neuecc (https://github.com/neuecc/UniRx). 
+ * @typeparam T The type of elements in the collection. 
+ */
+@:keep
+class ReactiveCollection<T> implements IReactiveCollection<T> {
+	#if (concurrent || sys)
 	var isDisposed:Bool = false;
-	var items:Array<T> = null;
-	// Внутреннее хранилище элементов
+	var items:Array<T> = null; // Внутреннее хранилище элементов
+
 	// Subjects for notifications
 	var countChanged:Subject<Int> = null;
 	var collectionReset:Subject<Unit> = null;
@@ -22,6 +29,7 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 	public function new(?collection:Iterable<T>) {
 		this.items = new Array<T>();
 		this.isDisposed = false;
+
 		if (collection != null) {
 			for (item in collection) {
 				push(item);
@@ -57,8 +65,7 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 	public function push(item:T):Int {
 		var index = items.length;
 		insertItem(index, item);
-		return index + 1;
-		// Возвращаем новую длину, как Array.push
+		return index + 1; // Возвращаем новую длину, как Array.push
 	}
 
 	public function insert(index:Int, item:T):Void {
@@ -89,14 +96,14 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 	// Observable методы
 	public function observeCountChanged(notifyCurrentCount:Bool = false):Observable<Int> {
 		if (isDisposed) {
-			return Observable.empty();
-			// ImmutableEmptyObservable<Int>.Instance в C#
+			return Observable.empty(); // ImmutableEmptyObservable<Int>.Instance в C#
 		}
+
 		var subject = countChanged;
 		if (subject == null) {
-			subject = countChanged = new rx.Subject<Int>();
-			// Subject.create<Int>()
+			subject = countChanged = new rx.Subject<Int>(); // Subject.create<Int>()
 		}
+
 		if (notifyCurrentCount) {
 			// Используем правильное имя метода из RxHaxe Subject
 			subject.on_next(count);
@@ -106,65 +113,55 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 
 	public function observeReset():Observable<Unit> {
 		if (isDisposed) {
-			return Observable.empty();
-			// ImmutableEmptyObservable<Unit>.Instance
+			return Observable.empty(); // ImmutableEmptyObservable<Unit>.Instance
 		}
 		var subject = collectionReset;
 		if (subject == null) {
-			subject = collectionReset = new rx.Subject<Unit>();
-			// Subject.create<Unit>()
+			subject = collectionReset = new rx.Subject<Unit>(); // Subject.create<Unit>()
 		}
 		return subject;
 	}
 
 	public function observeAdd():Observable<CollectionAddEvent<T>> {
 		if (isDisposed) {
-			return Observable.empty();
-			// ImmutableEmptyObservable<CollectionAddEvent<T>>.Instance
+			return Observable.empty(); // ImmutableEmptyObservable<CollectionAddEvent<T>>.Instance
 		}
 		var subject = collectionAdd;
 		if (subject == null) {
-			subject = collectionAdd = new rx.Subject<CollectionAddEvent<T>>();
-			// Subject.create<CollectionAddEvent<T>>()
+			subject = collectionAdd = new rx.Subject<CollectionAddEvent<T>>(); // Subject.create<CollectionAddEvent<T>>()
 		}
 		return subject;
 	}
 
 	public function observeMove():Observable<CollectionMoveEvent<T>> {
 		if (isDisposed) {
-			return Observable.empty();
-			// ImmutableEmptyObservable<CollectionMoveEvent<T>>.Instance
+			return Observable.empty(); // ImmutableEmptyObservable<CollectionMoveEvent<T>>.Instance
 		}
 		var subject = collectionMove;
 		if (subject == null) {
-			subject = collectionMove = new rx.Subject<CollectionMoveEvent<T>>();
-			// Subject.create<CollectionMoveEvent<T>>()
+			subject = collectionMove = new rx.Subject<CollectionMoveEvent<T>>(); // Subject.create<CollectionMoveEvent<T>>()
 		}
 		return subject;
 	}
 
 	public function observeRemove():Observable<CollectionRemoveEvent<T>> {
 		if (isDisposed) {
-			return Observable.empty();
-			// ImmutableEmptyObservable<CollectionRemoveEvent<T>>.Instance
+			return Observable.empty(); // ImmutableEmptyObservable<CollectionRemoveEvent<T>>.Instance
 		}
 		var subject = collectionRemove;
 		if (subject == null) {
-			subject = collectionRemove = new rx.Subject<CollectionRemoveEvent<T>>();
-			// Subject.create<CollectionRemoveEvent<T>>()
+			subject = collectionRemove = new rx.Subject<CollectionRemoveEvent<T>>(); // Subject.create<CollectionRemoveEvent<T>>()
 		}
 		return subject;
 	}
 
 	public function observeReplace():Observable<CollectionReplaceEvent<T>> {
 		if (isDisposed) {
-			return Observable.empty();
-			// ImmutableEmptyObservable<CollectionReplaceEvent<T>>.Instance
+			return Observable.empty(); // ImmutableEmptyObservable<CollectionReplaceEvent<T>>.Instance
 		}
 		var subject = collectionReplace;
 		if (subject == null) {
-			subject = collectionReplace = new rx.Subject<CollectionReplaceEvent<T>>();
-			// Subject.create<CollectionReplaceEvent<T>>()
+			subject = collectionReplace = new rx.Subject<CollectionReplaceEvent<T>>(); // Subject.create<CollectionReplaceEvent<T>>()
 		}
 		return subject;
 	}
@@ -182,11 +179,10 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 	// Внутренние методы (protected в C#)
 	function clearItems():Void {
 		var beforeCount = count;
-		items = new Array<T>();
-		// Простая очистка массива
+		items = new Array<T>(); // Простая очистка массива
+
 		if (collectionReset != null) {
-			collectionReset.on_next(Unit.instance);
-			// Используем Unit.instance
+			collectionReset.on_next(Unit.instance); // Используем Unit.instance
 		}
 		if (beforeCount > 0 && countChanged != null) {
 			countChanged.on_next(count);
@@ -195,6 +191,7 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 
 	function insertItem(index:Int, item:T):Void {
 		items.insert(index, item);
+
 		if (collectionAdd != null) {
 			collectionAdd.on_next(new CollectionAddEvent<T>(index, item));
 		}
@@ -207,6 +204,7 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 		var item = items[oldIndex];
 		items.splice(oldIndex, 1);
 		items.insert(newIndex, item);
+
 		if (collectionMove != null) {
 			collectionMove.on_next(new CollectionMoveEvent<T>(oldIndex, newIndex, item));
 		}
@@ -215,6 +213,7 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 	function removeItem(index:Int):Void {
 		var item = items[index];
 		items.splice(index, 1);
+
 		if (collectionRemove != null) {
 			collectionRemove.on_next(new CollectionRemoveEvent<T>(index, item));
 		}
@@ -226,6 +225,7 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 	function setItem(index:Int, item:T):Void {
 		var oldItem = items[index];
 		items[index] = item;
+
 		if (collectionReplace != null) {
 			collectionReplace.on_next(new CollectionReplaceEvent<T>(index, oldItem, item));
 		}
@@ -236,16 +236,26 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 		if (subject == null) {
 			return;
 		}
+
+		// Копируем логику try-finally вручную
+		var hasError = false;
+		var errorValue:Dynamic = null;
 		try {
-			subject.on_completed();
-			// Используем правильное имя метода
+			subject.on_completed(); // Используем правильное имя метода
+		} catch (e:Dynamic) {
+			// Сохраняем информацию об ошибке
+			hasError = true;
+			errorValue = e;
 		}
-		finally
-		{
-			// Subject в RxHaxe может не иметь dispose(), или он может быть в ISubscription
-			// Предположим, что Subject сам управляет ресурсами или unsubscribe() достаточно
-			// subject.dispose();
-			// Закомментировано, так как может не существовать
+
+		// Завершающие действия вне блока try
+		// Subject в RxHaxe может не иметь dispose(), или он может быть в ISubscription
+		// Предположим, что Subject сам управляет ресурсами или unsubscribe() достаточно
+		// subject.dispose(); // Закомментировано, так как может не существовать
+
+		// Если была ошибка, пробрасываем её
+		if (hasError) {
+			throw errorValue;
 		}
 	}
 
@@ -253,23 +263,29 @@ import rx.disposables.ISubscription; #end import systemsrx.computeds.Unit;
 		if (isDisposed) {
 			return;
 		}
+
 		if (disposing) {
 			disposeSubject(collectionReset);
 			collectionReset = null;
+
 			disposeSubject(collectionAdd);
 			collectionAdd = null;
+
 			disposeSubject(collectionMove);
 			collectionMove = null;
+
 			disposeSubject(collectionRemove);
 			collectionRemove = null;
+
 			disposeSubject(collectionReplace);
 			collectionReplace = null;
+
 			disposeSubject(countChanged);
 			countChanged = null;
 		}
+
 		isDisposed = true;
-		items = null;
-		// Освобождаем ссылку на массив
+		items = null; // Освобождаем ссылку на массив
 	}
 	#else
 	// Заглушка для платформ без поддержки

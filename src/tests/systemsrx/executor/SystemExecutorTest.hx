@@ -5,44 +5,15 @@ import utest.Test;
 import systemsrx.executor.SystemExecutor;
 import systemsrx.systems.ISystem;
 import systemsrx.executor.handlers.IConventionalSystemHandler;
-
+import tests.systemsrx.executor.FakeSystem; import tests.systemsrx.executor.FakeSystemHandler;
 // import systemsrx.exceptions.SystemAlreadyRegisteredException; // Если создан
 
 /** 
  * Tests for SystemExecutor, adapted from SystemsRx.Tests.SystemsRx.Handlers.SystemExecutorTests 
  */
 class SystemExecutorTest extends Test {
-	// Фиктивные реализации для тестов
-	class FakeSystem implements ISystem {}
-	class FakeSystemHandler implements IConventionalSystemHandler {
-		public var canHandleResult:Bool = false;
-		public var setupSystemCalled:Bool = false;
-		public var destroySystemCalled:Bool = false;
-		public var systemPassedToSetup:ISystem = null;
-		public var systemPassedToDestroy:ISystem = null;
-
-		public function new(canHandle:Bool = true) {
-			this.canHandleResult = canHandle;
-		}
-
-		public function canHandleSystem(system:ISystem):Bool {
-			return canHandleResult;
-		}
-
-		public function setupSystem(system:ISystem):Void {
-			setupSystemCalled = true;
-			systemPassedToSetup = system;
-		}
-
-		public function destroySystem(system:ISystem):Void {
-			destroySystemCalled = true;
-			systemPassedToDestroy = system;
-		}
-
-		public function dispose():Void {
-			// Фиктивная реализация
-		}
-	}
+	
+	
 	public function test_should_handle_and_expose_system() {
 		var fakeSystemHandler = new FakeSystemHandler(true);
 		var fakeSystem = new FakeSystem();

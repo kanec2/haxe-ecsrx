@@ -1,6 +1,6 @@
 package systemsrx.pools;
 
-#if (threads || sys)
+#if (concurrent || sys)
 // Используем Semaphore из haxe-concurrent для синхронизации, как в SystemExecutor
 import hx.concurrent.lock.Semaphore;
 #end
@@ -10,7 +10,7 @@ import hx.concurrent.lock.Semaphore;
  * * IDs are allocated from a list and can be released back to the pool. 
 **/
 class IdPool implements IIdPool {
-	#if (threads || sys)
+	#if (concurrent || sys)
 	final semaphore:Semaphore;
 	#end
 
@@ -30,9 +30,9 @@ class IdPool implements IIdPool {
 	 * * @param startingSize The initial size of the pool. Default is 10000. 
 	**/
 	public function new(increaseSize:Int = 10000, startingSize:Int = 10000) {
-		#if (threads || sys)
+		#if (concurrent || sys)
 		// Бинарный семафор для взаимного исключения (Mutex)
-		semaphore = new Semaphore(1, 1);
+		semaphore = new Semaphore(1);
 		#end
 		lastMax = startingSize;
 		_incrementSize = increaseSize;
@@ -48,7 +48,7 @@ class IdPool implements IIdPool {
 		return _incrementSize;
 	}
 
-	public function allocateInstance():Int {#if (threads || sys) semaphore.acquire(); #end
+	public function allocateInstance():Int {#if (concurrent || sys) semaphore.acquire(); #end
 		try {
 			if (availableIds.length == 0) {
 				expand();
@@ -61,10 +61,10 @@ class IdPool implements IIdPool {
 			return id != null ? id : throw "No ID available after check";
 		}
 		catch(e:Dynamic){
-            #if (threads || sys) semaphore.release(); #end
+            #if (concurrent || sys) semaphore.release(); #end
             throw e;
         }
-		#if (threads || sys) semaphore.release(); #end
+		#if (concurrent || sys) semaphore.release(); #end
 	}
 
 	public function isAvailable(id:Int):Bool {
@@ -78,7 +78,7 @@ class IdPool implements IIdPool {
 		if (id <= 0) {
 			throw "ID must be >= 1";
 		}
-		#if (threads || sys) semaphore.acquire(); #end
+		#if (concurrent || sys) semaphore.acquire(); #end
 		try {
 			if (id > lastMax) {
 				expand(id);
@@ -94,16 +94,16 @@ class IdPool implements IIdPool {
 			// после expand), то ничего не делаем - он считается выделенным.
 		}
 		catch(e:Dynamic){
-            #if (threads || sys) semaphore.release(); #end
+            #if (concurrent || sys) semaphore.release(); #end
             throw e;
         }
-		#if (threads || sys) semaphore.release(); #end
+		#if (concurrent || sys) semaphore.release(); #end
 	}
 
 	public function releaseInstance(id:Int):Void {
 		if (id <= 0) {
 			throw "ID must be >= 1";
-		} #if (threads || sys) semaphore.acquire(); #end try {
+		} #if (concurrent || sys) semaphore.acquire(); #end try {
 			if (id > lastMax) {
 				expand(id);
 			}
@@ -114,10 +114,10 @@ class IdPool implements IIdPool {
 			// В C# не было проверки на дубликаты, но в Haxe добавим для безопасности
 		}
 		catch(e:Dynamic){
-            #if (threads || sys) semaphore.release(); #end
+            #if (concurrent || sys) semaphore.release(); #end
             throw e;
         }
-		#if (threads || sys) semaphore.release(); #end
+		#if (concurrent || sys) semaphore.release(); #end
 	}
 
 	/** 

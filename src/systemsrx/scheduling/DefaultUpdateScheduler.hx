@@ -1,4 +1,4 @@
-package systemsrx.scheduling; #if (threads || sys) import rx.Observable;
+package systemsrx.scheduling; #if (concurrent || sys) import rx.Observable;
 
 import rx.Subject; // Используем базовый Subject, как в тестах
 import rx.disposables.CompositeDisposable;
@@ -11,7 +11,7 @@ import haxe.Timer; #end
  * * can offer higher precision. 
 **/
 class DefaultUpdateScheduler implements IUpdateScheduler {
-	#if (threads || sys)
+	#if (concurrent || sys)
 	var timer:haxe.Timer;
 	var previousTimeMs:Float;
 	// Используем базовый Subject из RxHaxe, как в тестах

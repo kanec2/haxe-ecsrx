@@ -1,6 +1,6 @@
 package systemsrx.reactivedata.dictionaries;
 
-#if (threads || sys)
+#if (concurrent || sys)
 import rx.Observable;
 import rx.Subject;
 import rx.disposables.ISubscription;
@@ -13,7 +13,7 @@ import systemsrx.computeds.Unit;
 
 /** * Reactive dictionary implementation. * This code is adapted from UniRx project by neuecc (https://github.com/neuecc/UniRx). * @typeparam TKey The type of keys in the dictionary. * @typeparam TValue The type of values in the dictionary. */
 @:keep class ReactiveDictionary<TKey, TValue> implements IReactiveDictionary<TKey, TValue> {
-	#if (threads || sys)
+	#if (concurrent || sys)
 	var isDisposed:Bool = false;
 	var inner:Map<TKey, TValue> = null;
 	// Внутреннее хранилище элементов

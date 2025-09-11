@@ -1,4 +1,4 @@
-package systemsrx.threading; #if (threads || sys) import hx.concurrent.thread.Threads;
+package systemsrx.threading; #if (concurrent || sys) import hx.concurrent.thread.Threads;
 
 import hx.concurrent.lock.Semaphore;
 import hx.concurrent.Future;
@@ -13,7 +13,7 @@ class DefaultThreadHandler implements IThreadHandler {
 	}
 
 	public function forLoop(start:Int, end:Int, process:Int->Void):Void {
-		#if (threads || sys)
+		#if (concurrent || sys)
 		// Используем haxe-concurrent для параллельного выполнения
 		var semaphore = new Semaphore(0);
 		var tasksCount = end - start;
@@ -37,7 +37,7 @@ class DefaultThreadHandler implements IThreadHandler {
 		#end
 	}
 
-	#if (threads || sys)
+	#if (concurrent || sys)
 	public function run(process:Void->Void):Future<Dynamic> {
 		// Создаем CompletableFuture для отслеживания результата
 		var future = new CompletableFuture<Dynamic>();

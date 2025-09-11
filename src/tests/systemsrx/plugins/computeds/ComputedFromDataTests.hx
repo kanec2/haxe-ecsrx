@@ -1,4 +1,4 @@
-package tests.systemsrx.computeds;
+package tests.systemsrx.plugins.computeds;
 
 import utest.Assert;
 import utest.Test;
@@ -11,29 +11,8 @@ import rx.Subject; // Предполагаем, что Subject доступен 
  */
 class ComputedFromDataTests extends Test {
 	// Вспомогательные классы для тестов
-	class DummyData {
-		public var data:Int;
-
-		public function new(data:Int) {
-			this.data = data;
-		}
-	}
-	class TestComputedFromData extends ComputedFromData<Int, DummyData> {
-		public var manuallyRefresh:Subject<Unit>;
-
-		public function new(data:DummyData) {
-			super(data);
-			this.manuallyRefresh = new rx.Subject<Unit>(); // Subject.create<Unit>()
-		}
-
-		override public function refreshWhen():rx.Observable<Unit> {
-			return manuallyRefresh;
-		}
-
-		override public function transform(data:DummyData):Int {
-			return data.data;
-		}
-	}
+	
+	
 	public function test_should_populate_on_creation() {
 		var expectedData = 10;
 		var data = new DummyData(expectedData);
