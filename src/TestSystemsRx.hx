@@ -11,6 +11,7 @@ import tests.systemsrx.plugins.*;
 import tests.systemsrx.plugins.reactivedata.*;
 import tests.systemsrx.plugins.computeds.*;
 import tests.systemsrx.extensions.*;
+
 /** 
  * Main entry point for running all tests in the haxe-ecsrx project. 
  */
@@ -30,9 +31,9 @@ class TestSystemsRx {
 		// Handlers
 		runner.addCase(new ManualSystemHandlerTest());
 		// Добавьте другие тесты для обработчиков, когда они будут реализованы
-		// runner.addCase(new systemsrx.handlers.BasicSystemHandlerTest());
-		// runner.addCase(new systemsrx.handlers.ReactToEventSystemHandlerTest());
-		// runner.addCase(new systemsrx.handlers.ReactiveSystemHandlerTest());
+		runner.addCase(new BasicSystemHandlerTest());
+		runner.addCase(new ReactToEventSystemHandlerTest());
+		runner.addCase(new ReactiveSystemHandlerTest());
 
 		// ReactiveData
 		runner.addCase(new SanityTests());

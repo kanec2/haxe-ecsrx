@@ -1,0 +1,9 @@
+# @install: lix --silent download "haxelib:/ripper#0.4.0" into ripper/0.4.0/haxelib
+-lib prayer
+-lib sinker
+-lib sneaker
+-cp ${HAXE_LIBCACHE}/ripper/0.4.0/haxelib/src/
+-D ripper=0.4.0
+# Default parameters for haxelib
+
+-lib sneaker

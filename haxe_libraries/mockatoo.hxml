@@ -1,0 +1,4 @@
+# @install: lix --silent download "haxelib:/mockatoo#3.2.1" into mockatoo/3.2.1/haxelib
+-lib mconsole
+-cp ${HAXE_LIBCACHE}/mockatoo/3.2.1/haxelib/
+-D mockatoo=3.2.1

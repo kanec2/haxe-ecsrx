@@ -1,0 +1,13 @@
+# @install: lix --silent download "gh://github.com/onehundredfeet/banker#b5e8643e27ccb2fb5fac09b6624da99ae0967882" into banker/0.7.1/github/b5e8643e27ccb2fb5fac09b6624da99ae0967882
+-lib prayer
+-lib ripper
+-lib sinker
+-lib sneaker
+-cp ${HAXE_LIBCACHE}/banker/0.7.1/github/b5e8643e27ccb2fb5fac09b6624da99ae0967882/src/
+-D banker=0.7.1
+# Default parameters for haxelib
+
+-lib sinker
+-lib prayer
+-lib sneaker
+-lib ripper

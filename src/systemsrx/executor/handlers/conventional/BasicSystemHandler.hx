@@ -2,16 +2,20 @@ package systemsrx.executor.handlers.conventional;
 
 #if (concurrent || sys)
 import rx.Observable;
+import rx.Observer; // Добавить импорт
 import rx.disposables.ISubscription;
 import systemsrx.scheduling.IUpdateScheduler;
 import systemsrx.systems.ISystem;
 import systemsrx.systems.conventional.IBasicSystem;
-
+import systemsrx.scheduling.ElapsedTime; // Вместо неправильного пути
 // Для приоритета
 // import systemsrx.utils.PriorityUtils;
 // Если будет использоваться макрос
-#end /** * Handler for IBasicSystem. * Subscribes the system's Execute method to the UpdateScheduler's OnUpdate event. */ @:priority(6)
-
+#end 
+/** * Handler for IBasicSystem. 
+ * * Subscribes the system's Execute method to the UpdateScheduler's OnUpdate event. 
+ * */ 
+ //@:priority(6)
 // Устанавливаем приоритет, как в C#
 class BasicSystemHandler implements IConventionalSystemHandler {
 	#if (concurrent || sys)
@@ -30,12 +34,16 @@ class BasicSystemHandler implements IConventionalSystemHandler {
 
 	public function setupSystem(system:ISystem):Void {
 		if (Std.is(system, IBasicSystem)) {
-			var castSystem:IBasicSystem = cast system;
+			var basicSystem:IBasicSystem = cast system;
 			// Подписываемся на onUpdate и вызываем execute у системы
 			// В RxHaxe subscribe возвращает ISubscription
-			var subscription:ISubscription = updateScheduler.onUpdate.subscribe(function(elapsedTime:systemsrx.scheduling.ElapsedTime) {
-				castSystem.execute(elapsedTime);
-			});
+			var subscription = updateScheduler.onUpdate.subscribe(Observer.create( 
+				function():Void {}, // onCompleted 
+				function(error:String):Void {}, // onError 
+				function(elapsedTime:ElapsedTime):Void { // onNext 
+				basicSystem.execute(elapsedTime); 
+				} 
+			));
 			systemSubscriptions.set(system, subscription);
 		}
 	}

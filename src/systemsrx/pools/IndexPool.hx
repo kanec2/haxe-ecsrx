@@ -1,188 +1,264 @@
 package systemsrx.pools;
 
-#if (concurrent || sys)
-// Используем Semaphore из haxe-concurrent для синхронизации
 import hx.concurrent.lock.Semaphore;
-#end
 
 /** 
- * * Pool for managing integer indexes, starting from 0. 
- * * Indexes are allocated from a stack (LIFO) and can be released back to the pool. 
-**/
+ * Pool for managing integer indexes, starting from 0. 
+ * Mimics the behavior of SystemsRx.IndexPool using a Stack-like approach with Haxe Array. 
+ * Indexes are allocated in ascending order: 0, 1, 2, ... 
+ */
 class IndexPool implements IPool<Int> {
-	#if (concurrent || sys)
+	#if (threads || sys)
 	final semaphore:Semaphore;
 	#end
 
 	public var incrementSize(get, null):Int;
+	public var availableIndexes:Array<Int>;
 
-	var lastMax:Int;
+	public var lastMax:Int; // Keep public for tests
+
 	final _incrementSize:Int;
 
 	/** 
-	 * * Stack of available indexes. 
-	 * * Implemented as Array, using push/pop for stack behavior. 
-	 * * Public for testing, as in the original C#. 
-	**/
-	public final availableIndexes:Array<Int>;
-
-	/** * Creates a new IndexPool. 
-	 * * @param increaseSize The amount to increase the pool size by when it's empty. Default is 100. 
-	 * * @param startingSize The initial size of the pool. Default is 1000. 
-	**/
+	 * Creates a new IndexPool. 
+	 * @param increaseSize The amount to increase the pool size by when it's empty. Default is 100. 
+	 * @param startingSize The initial size of the pool. Default is 1000. 
+	 */
 	public function new(increaseSize:Int = 100, startingSize:Int = 1000) {
-		#if (concurrent || sys) // Бинарный семафор для взаимного исключения (Mutex)
-		semaphore = new Semaphore(1); #end lastMax = startingSize;
+		#if (threads || sys)
+		// Binary semaphore for mutual exclusion (Mutex)
+		semaphore = new Semaphore(1);
+		#end
+
+		lastMax = startingSize;
 		_incrementSize = increaseSize;
 		availableIndexes = [];
 
-		// Заполняем пул индексами от 0 до startingSize-1 в обратном порядке, как в C#
-
-		// Enumerable.Range(0, _lastMax).Reverse()
-
-		// В Haxe это удобно сделать через цикл в обратном порядке
+		// Pre-populate the pool with indexes from 0 to startingSize-1.
+		// They are added in REVERSE order to simulate a Stack.
+		// The Haxe Array acts like a Stack where push() adds to the END (top)
+		// and pop() removes from the END (top).
+		// C# logic: Enumerable.Range(0, _lastMax).Reverse()
+		// -> { _lastMax-1, ..., 1, 0 }
+		// -> Stack becomes [0] (top), [1], ..., [_lastMax-1] (bottom).
+		// -> Pop() returns 0 first.
+		//
+		// So, for startingSize=10:
+		// i goes from 0 to 9.
+		// We push startingSize - 1 - i.
+		// i=0: push(10-1-0) = push(9)
+		// i=1: push(10-1-1) = push(8)
+		// ...
+		// i=9: push(10-1-9) = push(0)
+		// Result: availableIndexes = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+		// availableIndexes.pop() -> 0 (first allocated index).
 		for (i in 0...startingSize) {
 			availableIndexes.push(startingSize - 1 - i);
-			// 999, 998, ..., 1, 0
 		}
-
-		// Теперь при pop() мы будем получать 0, 1, 2, ..., 999
+		// Post-condition: availableIndexes = [startingSize-1, ..., 1, 0]
+		// availableIndexes.length = startingSize.
+		// availableIndexes.pop() returns 0.
 	}
 
 	function get_incrementSize():Int {
 		return _incrementSize;
 	}
 
+	/** 
+	 * Allocates an instance (an index) from the pool. 
+	 * Indexes are allocated in ascending order: 0, 1, 2, ... 
+	 * @return An available index. 
+	 */
 	public function allocateInstance():Int {
-		#if (concurrent || sys) semaphore.acquire(); #end
-		try {
-			if (availableIndexes.length == 0) {
-				expand();
+		#if (threads || sys)
+		semaphore.acquire();
+		#end
+
+		// Manual simulation of try-finally logic
+		var errorOccurred = false;
+		var caughtError:Dynamic = null;
+		var result:Int = 0;
+
+		if (availableIndexes.length == 0) {
+			// Manual simulation of expand() error handling
+			var expandErrorOccurred = false;
+			var expandCaughtError:Dynamic = null;
+			try {
+				expand(); // Expand by default incrementSize
+			} catch (e:Dynamic) {
+				expandErrorOccurred = true;
+				expandCaughtError = e;
 			}
 
-			// Берем индекс с вершины стека (как в C# Pop())
-
-			// pop() в Haxe возвращает Null<T>, поэтому проверим
-			var index = availableIndexes.pop();
-			return index != null ? index : throw "No index available after check";
-		} catch (e:Dynamic) {
-			#if (concurrent || sys) semaphore.release(); #end
-			throw e;
+			if (expandErrorOccurred) {
+				#if (threads || sys)
+				semaphore.release();
+				#end
+				throw expandCaughtError;
+			}
 		}
-		#if (concurrent || sys) semaphore.release(); #end
+
+		if (availableIndexes.length == 0) {
+			#if (threads || sys)
+			semaphore.release();
+			#end
+			throw "No index available after expansion";
+		}
+
+		// Pop the index from the top/end of the stack/array.
+		// Since indexes were pushed in reverse order, pop() returns the lowest available index first.
+		// For IndexPool(10, 10), after init: [9,8,7,6,5,4,3,2,1,0]. pop() -> 0.
+		var index = availableIndexes.pop();
+		if (index == null) { // Extra safety, though pop() on [] returns null anyway.
+			#if (threads || sys)
+			semaphore.release();
+			#end
+			throw "No index available after check";
+		}
+		result = index;
+
+		#if (threads || sys)
+		semaphore.release();
+		#end
+
+		return result;
 	}
 
+	/** 
+	 * Releases an index back to the pool, making it available for future allocations. 
+	 * @param index The index to release. 
+	 */
 	public function releaseInstance(index:Int):Void {
 		if (index < 0) {
 			throw "Index must be >= 0";
 		}
-		var result:Int = 0;
-		#if (concurrent || sys) semaphore.acquire(); #end
-		try {
-			if (index > lastMax) {
-				expand(index);
+
+		#if (threads || sys)
+		semaphore.acquire();
+		#end
+
+		// Manual simulation of try-finally logic
+		var errorOccurred = false;
+		var caughtError:Dynamic = null;
+
+		if (index >= lastMax) { // If index is beyond current range, expand
+			// Manual simulation of expand() error handling
+			var expandErrorOccurred = false;
+			var expandCaughtError:Dynamic = null;
+			try {
+				// Expand to accommodate the index.
+				// Pass index+1 to ensure index is within the logical range after expansion.
+				// If index=15, lastMax=10. We want indexes 10..15 available.
+				// expand(16) -> increaseBy = 16-10=6. Add 10,11,12,13,14,15.
+				expand(index + 1);
+			} catch (e:Dynamic) {
+				expandErrorOccurred = true;
+				expandCaughtError = e;
 			}
-			// Добавляем индекс обратно в пул, если его там еще нет
-			// Для стека это может быть не так критично, как для ID, но для безопасности
-			if (availableIndexes.indexOf(index) == -1) {
-				availableIndexes.push(index);
+
+			if (expandErrorOccurred) {
+				#if (threads || sys)
+				semaphore.release();
+				#end
+				throw expandCaughtError;
 			}
-		} catch (e:Dynamic) {
-			#if (concurrent || sys) semaphore.release();
-			// Освобождаем до re-throw
-			#end throw e; // Повторно бросаем исключение
 		}
 
-		{#if (concurrent || sys) semaphore.release(); #end}
+		// Add the index back to the pool.
+		// C# Stack allows duplicates. Haxe Array also allows it.
+		// Pushing to the end/top.
+		// We push to the END of the array, maintaining the stack property.
+		// The position in the stack doesn't matter much for correctness,
+		// as long as it's available for future pop() calls.
+		// Pushing to the end is simplest and consistent with initialization.
+		availableIndexes.push(index);
+
+		#if (threads || sys)
+		semaphore.release();
+		#end
 	}
 
-	/** * Expands the pool. * @param newIndex Optional. If provided, expands the pool to include this index. */
+	/** 
+	 * Expands the pool. 
+	 * @param newIndex Optional. If provided, expands the pool to include this index. 
+	 * If null, expands by incrementSize. 
+	 */
 	public function expand(?newIndex:Int):Void {
-		// Эта функция вызывается только изнутри других методов, которые уже захватили семафор
+		// This function is called from within other methods that have already acquired the semaphore.
+		// Therefore, it does NOT acquire the semaphore itself.
+
 		var increaseBy = 0;
 		if (newIndex != null) {
-			// Логика аналогична IdPool, но с индексами от 0
-			// Чтобы индекс newIndex стал доступен, нужно, чтобы
-			// lastMax было достаточно большим, чтобы newIndex был в диапазоне [0, lastMax-1]
-			// или, точнее, чтобы newIndex <= lastMax - 1, т.е. lastMax >= newIndex + 1.
-			// Но в C# коде было: increaseBy = (newIndex+1) -_lastMax ?? _increaseSize;
-			// И потом: var newEntries = Enumerable.Range(_lastMax, increaseBy).Reverse();
-			// foreach(var entry in newEntries) { AvailableIndexes.Push(entry); }
-			// _lastMax += increaseBy;
-			// Разберем: если newIndex=15, _lastMax=10.
-			// increaseBy = (15+1) - 10 = 16 - 10 = 6.
-			// Range(_lastMax, increaseBy) = Range(10, 6) = {10, 11, 12, 13, 14, 15}.
-			// Reverse() = {15, 14, 13, 12, 11, 10}.
-			// Push в стек: 10, 11, 12, 13, 14, 15 (снизу вверх).
-			// Pop из стека: 15, 14, 13, 12, 11, 10.
-			// _lastMax += 6 = 16.
-			// Теперь доступны индексы 0..9 (старые) и 10..15 (новые).
-			// _lastMax=16 означает, что максимальный возможный индекс теперь 15.
-			// Это логично.
-			// Если newIndex=5, _lastMax=10.
-			// increaseBy = (5+1) - 10 = -4.
-			// Range(10, -4) = пусто.
-			// _lastMax += -4 = 6.
-			// Это странно: максимальный индекс стал меньше, но старые значения 0..9 остались.
-			// Вероятно, это баг в C# коде.
-			// Логика должна быть: если newIndex >= _lastMax, расширить.
-			// Если newIndex < _lastMax, не расширять.
-			if (newIndex >= lastMax) {
-				// Вычисляем, на сколько нужно расширить
-				// Нам нужны индексы от lastMax до newIndex включительно
-				// Количество = newIndex - lastMax + 1
-				// Но в C# было (newIndex+1) - _lastMax = newIndex - _lastMax + 1
-				// То же самое.
-				increaseBy = (newIndex + 1) - lastMax;
-			} else {
-				// newIndex < lastMax, не расширяем
-				increaseBy = 0;
-			}
+			// Logic: Calculate how many new indexes we need to add.
+			// C# logic: increaseBy = (newIndex + 1) - _lastMax;
+			// This ensures that if newIndex=5 and _lastMax=3,
+			// we add indexes 3, 4, 5. (increaseBy = 6-3 = 3).
+			// If newIndex=5 and _lastMax=6, increaseBy = 6-6 = 0. No expansion needed.
+			increaseBy = (newIndex + 1) - lastMax;
+			if (increaseBy <= 0) { increaseBy = 0; }
 		} else {
-			// newIndex == null, расширяем на incrementSize
+			// If newIndex is null, expand by the default increment size.
 			increaseBy = _incrementSize;
 		}
-		// В C# было: if (increaseBy <= 0){ return; }
-		// Это защищает от отрицательных значений.
-		// В нашей исправленной логике increaseBy не должно быть < 0, но для безопасности
-		// добавим проверку.
+
+		// C# has: if (increaseBy <= 0){ return; }
+		// This protects against negative or zero increases.
+		// It also handles the case where newIndex + 1 <= lastMax.
 		if (increaseBy <= 0) {
 			return;
 		}
-		if (increaseBy > 0) {
-			// Добавляем индексы от lastMax до (lastMax + increaseBy - 1) в обратном порядке
-			// Range(_lastMax, increaseBy).Reverse() в C# эквивалентно:
-			var startIndex = lastMax;
-			var endIndex = lastMax + increaseBy - 1;
-			// Включительно
-			// Добавляем в стек в обратном порядке (как Reverse() в C#)
-			// Push(entry) для entry от endIndex downto startIndex
-			var i = endIndex;
-			while (i >= startIndex) {
-				availableIndexes.push(i);
-				i--;
-			}
-			// Обновляем lastMax
-			lastMax += increaseBy;
+
+		// Now, add the new indexes.
+		// C# logic:
+		// 1. var newEntries = Enumerable.Range(_lastMax, increaseBy).Reverse();
+		// Range(_lastMax, increaseBy) -> {_lastMax, _lastMax+1, ..., _lastMax + increaseBy - 1}
+		// Reverse() -> {_lastMax + increaseBy - 1, ..., _lastMax+1, _lastMax}
+		// 2. foreach(var entry in newEntries) { AvailableIndexes.Push(entry); }
+		// Push(_lastMax + increaseBy - 1), ..., Push(_lastMax+1), Push(_lastMax)
+		// Stack becomes [..., old_end, _lastMax + increaseBy - 1, ..., _lastMax+1, _lastMax]
+		// Next Pop() -> _lastMax.
+		//
+		// Haxe Array simulation to achieve the same final stack state:
+		// We want to add the new range {_lastMax, ..., _lastMax + increaseBy - 1}
+		// to the END of availableIndexes in REVERSED order, so that pop()
+		// retrieves them in the correct ASCENDING order.
+		//
+		// Method: Iterate from the END of the new range DOWN TO the START
+		// and push() each element. This places them at the end/top of the array
+		// in the correct stack order.
+		//
+		// Start index for the range is lastMax.
+		// End index (inclusive) is lastMax + increaseBy - 1.
+		var startIndex = lastMax;
+		var endIndexInclusive = lastMax + increaseBy - 1;
+
+		// Push entries from endIndexInclusive down to startIndex
+		// This is equivalent to iterating the reversed C# Range and pushing.
+		var i = endIndexInclusive;
+		while (i >= startIndex) {
+			availableIndexes.push(i); // Add to the end/top of the stack/array
+			i--;
 		}
+
+		// Finally, update the upper bound marker.
+		// C# logic: _lastMax += increaseBy;
+		lastMax += increaseBy;
 	}
 
-	/** * Clears the pool, removing all available indexes. */
+	/** 
+	 * Clears the pool, removing all available indexes. 
+	 */
 	public function clear():Void {
-		#if (concurrent || sys) semaphore.acquire(); #end
-		try {
-			lastMax = 0;
-			availableIndexes.resize(0);
-			// Очищаем массив
-			// В C# было AvailableIndexes.Clear();
-		} catch (e:Dynamic) {
-			#if (concurrent || sys) semaphore.release(); #end
-			throw e;
-		}
+		#if (threads || sys)
+		semaphore.acquire();
+		#end
 
-		#if (concurrent || sys) semaphore.release(); #end
+		// Manual simulation of try-finally logic
+		lastMax = 0;
+		availableIndexes.resize(0); // Clear the array
+
+		#if (threads || sys)
+		semaphore.release();
+		#end
 	}
-
-	// Реализация IPool<Int>.releaseInstance уже есть, она принимает Int.
-	// Нет необходимости в отдельном методе, если сигнатура совпадает.
 }

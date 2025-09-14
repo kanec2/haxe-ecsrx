@@ -14,7 +14,9 @@ import systemsrx.systems.conventional.IReactToEventSystem;
 // или макросы для генерации кода.
 // Для упрощения, предположим, что системы сами знают, как подписаться.
 // Или что существует утилита, которая может это сделать.
-// Пока оставим реализацию упрощенной или с заглушками. #end /** * Handler for systems that react to events (IReactToEventSystem<T>). * Subscribes to the EventSystem to receive events and pass them to the system. * Note: Runtime generic method invocation like in C# is not directly possible in Haxe. * This implementation might require adjustments based on how IReactToEventSystem is defined. */
+// Пока оставим реализацию упрощенной или с заглушками. 
+#end 
+/** * Handler for systems that react to events (IReactToEventSystem<T>). * Subscribes to the EventSystem to receive events and pass them to the system. * Note: Runtime generic method invocation like in C# is not directly possible in Haxe. * This implementation might require adjustments based on how IReactToEventSystem is defined. */
 @:priority(6)
 // Устанавливаем приоритет, как в C#
 class ReactToEventSystemHandler implements IConventionalSystemHandler {
@@ -44,7 +46,7 @@ class ReactToEventSystemHandler implements IConventionalSystemHandler {
 		// Пока что вернем false или true для демонстрации return Std.is(system, systemsrx.systems.conventional.IReactToEventSystem);
 		// Нужно уточнить интерфейс
 		// Или реализовать логику обнаружения по-другому
-        return (system is IReactToEventSystem<Dynamic>);
+        return Reflect.hasField(system, "reactTo") && Reflect.hasField(system, "process");
 	}
 
 	// Предполагаемые вспомогательные методы (могут быть реализованы по-другому)
@@ -104,7 +106,7 @@ class ReactToEventSystemHandler implements IConventionalSystemHandler {
 		if (systemSubscriptions.exists(system)) {
 			var compositeDisposable = systemSubscriptions.get(system);
 			if (compositeDisposable != null) {
-				compositeDisposable.dispose();
+				compositeDisposable.unsubscribe();
 				// Отписываемся от всех подписок
 			}
 			systemSubscriptions.remove(system);
@@ -116,7 +118,7 @@ class ReactToEventSystemHandler implements IConventionalSystemHandler {
 		// Отписываемся от всех систем
 		for (compositeDisposable in systemSubscriptions) {
 			if (compositeDisposable != null) {
-				compositeDisposable.dispose();
+				compositeDisposable.unsubscribe();
 			}
 		}
 		systemSubscriptions.clear();

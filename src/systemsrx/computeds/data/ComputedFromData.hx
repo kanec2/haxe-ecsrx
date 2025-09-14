@@ -18,7 +18,7 @@ import systemsrx.computeds.Unit;
  * @typeparam TInput The type of the data source. 
  */
 abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /*implements IDisposable*/ {
-	#if (concurrent || sys)
+	#if (threads || sys)
 	public var cachedData:TOutput;
 
 	final subscriptions:Array<ISubscription>;
@@ -32,11 +32,15 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /
 		this.dataSource = dataSource;
 		this.subscriptions = [];
 		this.onDataChanged = new rx.Subject<TOutput>(); // Subject.create<TOutput>()
-		this.needsUpdate = true; // Нужно обновить при первом запросе значения
-		this.lock = new Semaphore(1); // Бинарный семафор для взаимного исключения
+		// ИСПРАВЛЕНИЕ 1: Инициализируем флаг needsUpdate как false, так как RefreshData() вызывается
+		this.needsUpdate = false;
+		// ИСПРАВЛЕНИЕ 2: Используем правильный конструктор Semaphore
+		this.lock = new Semaphore(1); // Бинарный семафор: 1 permit изначально доступен
 
+		// ИСПРАВЛЕНИЕ 3: Вызываем MonitorChanges(), как в C#
 		monitorChanges();
-		// refreshData(); // Не вызываем сразу, пусть GetData сделает это при первом запросе
+		// ИСПРАВЛЕНИЕ 4: Вызываем RefreshData() сразу, как в C#, чтобы инициализировать CachedData
+		refreshData(); // Это установит CachedData = Transform(DataSource) и needsUpdate = false
 	}
 
 	// Реализация Observable<TOutput>
@@ -74,12 +78,24 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /
 
 	public function requestUpdate(?_:Dynamic):Void {
 		needsUpdate = true;
-		// Если есть подписчики на onDataChanged, обновляем данные немедленно
-		// Это предполагает, что у Subject есть способ проверить наличие подписчиков
-		// В RxHaxe это может быть hasObservers() или аналогичный метод
-		// if (onDataChanged.hasObservers()) {
-		// Предполагаемый метод refreshData();
-		// }
+		// ИСПРАВЛЕНИЕ 5: Проверяем, есть ли подписчики на onDataChanged, как в C#
+		
+		if ( onDataChanged.hasObservers() ) {
+			refreshData();
+		}
+		// Для простоты и соответствия логике "если есть подписчики, обновить немедленно",
+		// мы можем вызвать RefreshData() всегда, но это нарушает семантику отложенного обновления.
+		// Лучше найти способ проверить наличие подписчиков.
+		// Пока что оставим без вызова RefreshData() здесь, как в оригинале,
+		// предполагая, что проверка будет реализована позже или иначе.
+		// Но в C# коде RefreshData() вызывается только если HasObservers=true.
+		// В оригинальном C# коде:
+		// if(_onDataChanged.HasObservers)
+		// { RefreshData(); }
+		// Нам нужно имитировать это поведение.
+		// Если в RxHaxe нет прямого эквивалента HasObservers,
+		// можно добавить счетчик подписчиков или использовать флаг.
+		// Для начала оставим без вызова RefreshData() здесь.
 	}
 
 	public function refreshData():Void {
@@ -154,6 +170,10 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> /
 
 	public function new(dataSource:TInput) {
 		this.dataSource = dataSource;
+		// Инициализация других полей заглушки, если необходимо
+		// В данном случае других полей инициализировать не нужно,
+		// так как они будут инициализированы при первом доступе
+		// или останутся null/default.
 	}
 
 	public function subscribe(observer:rx.observers.IObserver<TOutput>):rx.disposables.ISubscription {

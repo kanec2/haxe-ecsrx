@@ -30,7 +30,7 @@ class ReactiveSystemHandler implements IConventionalSystemHandler {
 		// return system.isReactiveSystem();
 		// Предполагаемый метод
 		// Или проверка через Std.is для известных интерфейсов
-		return (system is IReactiveSystem<Dynamic>);
+		return Reflect.hasField(system, "reactTo") && Reflect.hasField(system, "execute");
 		// Нужно уточнить интерфейс
 	}
 
@@ -62,7 +62,7 @@ class ReactiveSystemHandler implements IConventionalSystemHandler {
 		if (systemSubscriptions.exists(system)) {
 			var compositeDisposable = systemSubscriptions.get(system);
 			if (compositeDisposable != null) {
-				compositeDisposable.dispose();
+				compositeDisposable.unsubscribe();
 				// Отписываемся от всех подписок
 			}
 			systemSubscriptions.remove(system);
@@ -74,7 +74,7 @@ class ReactiveSystemHandler implements IConventionalSystemHandler {
 		// Отписываемся от всех систем
 		for (compositeDisposable in systemSubscriptions) {
 			if (compositeDisposable != null) {
-				compositeDisposable.dispose();
+				compositeDisposable.unsubscribe();
 			}
 		}
 		systemSubscriptions.clear();
