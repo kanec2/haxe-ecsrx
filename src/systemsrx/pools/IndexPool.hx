@@ -254,7 +254,7 @@ class IndexPool implements IPool<Int> {
 		#end
 
 		// Manual simulation of try-finally logic
-		lastMax = 0;
+		//lastMax = 0;
 		availableIndexes.resize(0); // Clear the array
 
 		#if (threads || sys)

@@ -1,7 +1,7 @@
 import hxd.App;
 import ecsrx.framework.EcsRxApplication;
 import ecsrx.entities.Entity;
-import ecsrx.systems.examples. * ;
+import ecsrx.systems.examples.*;
 import ecsrx.plugins.CorePlugin;
 import ecsrx.plugins.HeapsPlugin;
 import ecsrx.plugins.HScriptPlugin;
@@ -10,66 +10,62 @@ import ecsrx.systems.HeapsRenderSystem;
 import ecsrx.systems.HeapsSpriteCleanupSystem;
 import ecsrx.systems.HScriptSystem;
 import ecsrx.systems.ScriptExecutionSystem;
-import ecsrx.types. * ;
+import ecsrx.types.*;
+
 class TestMain extends hxd.App {
-  private
-  var _ecsApp: EcsRxApplication;
-  private
-  var _heapsPlugin: HeapsPlugin;
-  private
-  var _hscriptPlugin: HScriptPlugin;
-  private
-  var _diPlugin: DIPlugin;
-  override
-  function init() {
-    super.init();
-    trace("Initializing EcsRx with Heaps, HScript and DI...");
-    // Создаем EcsRx приложение 
-    _ecsApp = new EcsRxApplication();
-    // Создаем и регистрируем плагины 
-    _heapsPlugin = new HeapsPlugin(s2d);
-    _hscriptPlugin = new HScriptPlugin();
-    _diPlugin = new DIPlugin();
-    _ecsApp.registerPlugin(_heapsPlugin);
-    _ecsApp.registerPlugin(_hscriptPlugin);
-    _ecsApp.registerPlugin(_diPlugin);
-    _ecsApp.registerPlugin(new CorePlugin());
-    // Создаем коллекцию игроков 
-    var playerCollection = _ecsApp.collectionManager.createCollection(function(entity) {
-      return entity.hasComponent(PlayerComponent);
-    },
-    "players");
-    // Регистрируем все системы 
-    var setupSystem = new ExampleSetupSystem(_ecsApp.entityDatabase);
-    var healthSystem = new HealthSystem(_ecsApp.entityDatabase);
-    var playerInputSystem = new PlayerInputSystem(_ecsApp.entityDatabase);
-    var movementSystem = new MovementSystem(_ecsApp.entityDatabase);
-    var collisionSystem = new CollisionSystem(_ecsApp.entityDatabase);
-    var reactToGroupSystem = new ExampleReactToGroupSystem(playerCollection);
-    // Heaps системы 
-    var renderSystem = new HeapsRenderSystem(_ecsApp.entityDatabase, _heapsPlugin);
-    var spriteCleanupSystem = new HeapsSpriteCleanupSystem(_ecsApp.entityDatabase, _heapsPlugin);
-    // HScript системы 
-    var hscriptSystem = new HScriptSystem(_ecsApp.entityDatabase, _hscriptPlugin);
-    var scriptExecutionSystem = new ScriptExecutionSystem(_ecsApp.entityDatabase, _hscriptPlugin);
-    // DI система 
-    var diExampleSystem = new DIExampleSystem(_ecsApp.serviceContainer);
-    _ecsApp.registerSystem(setupSystem);
-    _ecsApp.registerSystem(healthSystem);
-    _ecsApp.registerSystem(playerInputSystem);
-    _ecsApp.registerSystem(movementSystem);
-    _ecsApp.registerSystem(collisionSystem);
-    _ecsApp.registerSystem(reactToGroupSystem);
-    _ecsApp.registerSystem(renderSystem);
-    _ecsApp.registerSystem(spriteCleanupSystem);
-    _ecsApp.registerSystem(hscriptSystem);
-    _ecsApp.registerSystem(scriptExecutionSystem);
-    _ecsApp.registerSystem(diExampleSystem);
-    // Запускаем приложение 
-    _ecsApp.startApplication();
-    // Создаем тестовые сущности 
-    createTestEntities();
-  }
+	private var _ecsApp:EcsRxApplication;
+	private var _heapsPlugin:HeapsPlugin;
+	private var _hscriptPlugin:HScriptPlugin;
+	private var _diPlugin:DIPlugin;
+
+	override function init() {
+		super.init();
+		trace("Initializing EcsRx with Heaps, HScript and DI...");
+		// Создаем EcsRx приложение
+		_ecsApp = new EcsRxApplication();
+		// Создаем и регистрируем плагины
+		_heapsPlugin = new HeapsPlugin(s2d);
+		_hscriptPlugin = new HScriptPlugin();
+		_diPlugin = new DIPlugin();
+		_ecsApp.registerPlugin(_heapsPlugin);
+		_ecsApp.registerPlugin(_hscriptPlugin);
+		_ecsApp.registerPlugin(_diPlugin);
+		_ecsApp.registerPlugin(new CorePlugin());
+		// Создаем коллекцию игроков
+		var playerCollection = _ecsApp.collectionManager.createCollection(function(entity) {
+			return entity.hasComponent(PlayerComponent);
+		}, "players");
+		// Регистрируем все системы
+		var setupSystem = new ExampleSetupSystem(_ecsApp.entityDatabase);
+		var healthSystem = new HealthSystem(_ecsApp.entityDatabase);
+		var playerInputSystem = new PlayerInputSystem(_ecsApp.entityDatabase);
+		var movementSystem = new MovementSystem(_ecsApp.entityDatabase);
+		var collisionSystem = new CollisionSystem(_ecsApp.entityDatabase);
+		var reactToGroupSystem = new ExampleReactToGroupSystem(playerCollection);
+		// Heaps системы
+		var renderSystem = new HeapsRenderSystem(_ecsApp.entityDatabase, _heapsPlugin);
+		var spriteCleanupSystem = new HeapsSpriteCleanupSystem(_ecsApp.entityDatabase, _heapsPlugin);
+		// HScript системы
+		var hscriptSystem = new HScriptSystem(_ecsApp.entityDatabase, _hscriptPlugin);
+		var scriptExecutionSystem = new ScriptExecutionSystem(_ecsApp.entityDatabase, _hscriptPlugin);
+		// DI система
+		var diExampleSystem = new DIExampleSystem(_ecsApp.serviceContainer);
+		_ecsApp.registerSystem(setupSystem);
+		_ecsApp.registerSystem(healthSystem);
+		_ecsApp.registerSystem(playerInputSystem);
+		_ecsApp.registerSystem(movementSystem);
+		_ecsApp.registerSystem(collisionSystem);
+		_ecsApp.registerSystem(reactToGroupSystem);
+		_ecsApp.registerSystem(renderSystem);
+		_ecsApp.registerSystem(spriteCleanupSystem);
+		_ecsApp.registerSystem(hscriptSystem);
+		_ecsApp.registerSystem(scriptExecutionSystem);
+		_ecsApp.registerSystem(diExampleSystem);
+		// Запускаем приложение
+		_ecsApp.startApplication();
+		// Создаем тестовые сущности
+		createTestEntities();
+	}
 
 	private function createTestEntities():Void {
 		// Создаем игрока

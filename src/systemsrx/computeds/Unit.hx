@@ -1,4 +1,6 @@
-package systemsrx.computeds; /** * A simple unit type to represent a valueless signal, similar to Unit in Rx.NET or Kotlin. */ @:structInit class Unit {
+package systemsrx.computeds; 
+/** * A simple unit type to represent a valueless signal, similar to Unit in Rx.NET or Kotlin. */ 
+@:structInit class Unit {
 
 	public static final instance:Unit = {};
 

@@ -27,7 +27,7 @@ class TestSystemsRx {
 
 		// Executor
 		runner.addCase(new SystemExecutorTest());
-
+		runner.addCase(new IdPoolAdditionalTests());
 		// Handlers
 		runner.addCase(new ManualSystemHandlerTest());
 		// Добавьте другие тесты для обработчиков, когда они будут реализованы
@@ -41,7 +41,7 @@ class TestSystemsRx {
 
 		// Computeds
 		runner.addCase(new ComputedFromDataTests());
-
+		runner.addCase(new ComputedFromDataAdditionalTests());
 		// Extensions (ранее IDictionaryExtensionTests)
 		//runner.addCase(new MapExtensionsTest());
 

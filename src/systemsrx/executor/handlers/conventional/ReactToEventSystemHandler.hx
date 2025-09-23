@@ -46,7 +46,10 @@ class ReactToEventSystemHandler implements IConventionalSystemHandler {
 		// Пока что вернем false или true для демонстрации return Std.is(system, systemsrx.systems.conventional.IReactToEventSystem);
 		// Нужно уточнить интерфейс
 		// Или реализовать логику обнаружения по-другому
-        return Reflect.hasField(system, "reactTo") && Reflect.hasField(system, "process");
+        
+		// ИСПРАВЛЕНИЕ: Правильно проверяем, реализует ли система IReactToEventSystem 
+		//Std.downcast(system,)
+		return Std.isOfType(system ,IReactToEventSystem);
 	}
 
 	// Предполагаемые вспомогательные методы (могут быть реализованы по-другому)
