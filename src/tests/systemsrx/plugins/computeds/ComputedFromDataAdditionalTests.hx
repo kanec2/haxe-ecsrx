@@ -10,10 +10,11 @@ import tests.mocks.*;
 
 class ComputedFromDataAdditionalTests extends Test {
 	public function test_should_handle_transform_error() {
+
 		var dataSource = new FaultyDataSource(10);
 		var computedData = new FaultyTransformComputedFromData(dataSource);
 		computedData.shouldThrow = true;
-
+        trace("computedData.shouldThrow = "+computedData.shouldThrow);
 		try {
 			var value = computedData.value;
 			Assert.fail("Should have thrown an exception");
@@ -21,6 +22,7 @@ class ComputedFromDataAdditionalTests extends Test {
 			// Ожидаем исключение
 			Assert.equals("Transform error", e);
 		}
+
 	}
 
 	public function test_should_handle_refresh_when_error() {

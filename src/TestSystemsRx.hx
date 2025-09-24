@@ -18,6 +18,7 @@ import tests.systemsrx.extensions.*;
 class TestSystemsRx {
 	public static function main() {
 		// Создаем раннер для тестов
+		trace("Starting tests..."); // <-- Добавить
 		var runner = new Runner();
 
 		// Добавляем все тестовые классы
@@ -54,8 +55,9 @@ class TestSystemsRx {
 
 		// Создаем отчет для вывода результатов в консоль
 		Report.create(runner);
-
+		trace("Running tests..."); // <-- Добавить
 		// Запускаем тесты
 		runner.run();
+		trace("Tests finished."); // <-- Добавить
 	}
 }
