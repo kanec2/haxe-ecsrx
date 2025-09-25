@@ -6,26 +6,22 @@ import systemsrx.computeds.data.ComputedFromData;
 
 // Вспомогательный класс с ошибкой в refreshWhen
 class FaultyRefreshWhenComputedFromData extends ComputedFromData<Int, FaultyDataSource> {
-	public var shouldThrow:Bool = false;
+	public var shouldThrowOnRefreshWhen:Bool = false;
 
-	public function new(dataSource:FaultyDataSource, throwEx:Bool = true) {
-        trace("FaultyRefreshWhenComputedFromData. Created");
-        shouldThrow = throwEx;
+	public function new(dataSource:FaultyDataSource) {
 		super(dataSource);
 	}
 
 	public function refreshWhen():Observable<Unit> {
-        trace("FaultyRefreshWhenComputedFromData. Refresh when begin. should throw is "+shouldThrow);
-		if (shouldThrow) {
-            trace("FaultyRefreshWhenComputedFromData. Err throwed");
-			throw "RefreshWhen error"; // Бросаем исключение, если shouldThrow=true
+		// ИСПРАВЛЕНИЕ: Бросаем исключение при вызове refreshWhen(), если shouldThrowOnRefreshWhen=true
+		if (shouldThrowOnRefreshWhen) {
+			throw "RefreshWhen error";
 		}
 		// Возвращаем пустой Observable, который никогда не испускает значений
 		return Observable.empty();
 	}
 
 	public function transform(dataSource:FaultyDataSource):Int {
-        trace("FaultyRefreshWhenComputedFromData. Transform called");
 		return dataSource.data;
 	}
 }

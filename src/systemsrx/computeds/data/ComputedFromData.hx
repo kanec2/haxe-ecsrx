@@ -1,11 +1,11 @@
 package systemsrx.computeds.data;
 
-import rx.disposables.Composite;
 import rx.Observer;
 #if (threads || sys)
 import rx.Observable;
 import rx.Subject;
 import rx.disposables.ISubscription;
+import rx.observers.IObserver;
 import hx.concurrent.lock.Semaphore; // Для синхронизации
 #end
 import systemsrx.computeds.IComputed;
@@ -30,7 +30,6 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> {
 	public var dataSource(default, null):TInput;
 
 	public function new(dataSource:TInput) {
-
 		this.dataSource = dataSource;
 		this.subscriptions = [];
 		this.onDataChanged = new rx.Subject<TOutput>(); // Subject.create<TOutput>()
@@ -38,47 +37,21 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> {
 		// ИСПРАВЛЕНИЕ: Используем правильный конструктор Semaphore
 		this.lock = new Semaphore(1); // Бинарный семафор для взаимного исключения (Mutex)
 
-		// ИСПРАВЛЕНИЕ 1: Вызываем MonitorChanges и RefreshData в конструкторе, как в C#
+		// Вызываем MonitorChanges и RefreshData в конструкторе, как в C#
 		monitorChanges();
 		refreshData(); // Это установит начальное значение cachedData и needsUpdate = false
-
 	}
 
-	public function getData():TOutput {
-		#if (threads || sys)
+	// Реализация Observable<TOutput>
+	public function subscribe(observer:IObserver<TOutput>):ISubscription {
+		return onDataChanged.subscribe(observer);
+	}
 
-		lock.acquire();
-		#end
+	// Реализация IComputed<TOutput>
+	public var value(get, null):TOutput;
 
-		// ИСПРАВЛЕНИЕ: Правильная обработка исключений с try-finally вручную
-		var hasError = false;
-		var errorValue:Dynamic = null;
-		var result:TOutput = null;
-
-		try {
-			if (needsUpdate) {
-				refreshData(); // Может бросить исключение из transform()
-			}
-			result = cachedData;
-		} catch (e:Dynamic) {
-			// Сохраняем информацию об ошибке
-			hasError = true;
-			errorValue = e;
-		}
-
-		// Завершающие действия вне блока try - ОБЯЗАТЕЛЬНО вызываем semaphore.release()
-		#if (threads || sys)
-
-		lock.release();
-		#end
-
-		// Если была ошибка во время refreshData(), пробрасываем её после освобождения ресурсов
-		if (hasError) {
-			trace("Throwing error from getData()");
-			throw errorValue;
-		}
-
-		return result;
+	function get_value():TOutput {
+		return getData();
 	}
 
 	public function monitorChanges():Void {
@@ -98,128 +71,121 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> {
 			function(unit:Unit):Void {
 				requestUpdate();
 			}));
-		subscriptions.push(Composite.create([subscription]));
+		subscriptions.push(subscription);
 	}
 
 	public function requestUpdate(?_:Dynamic):Void {
 		needsUpdate = true;
 
 		// Проверяем, есть ли подписчики у onDataChanged, как в C#
-		// Это делается через вызов refreshWhen() и проверку подписчиков у результата
-		try {
-			// var refreshObservable = refreshWhen(); // Может бросить исключение
-			if (onDataChanged != null && onDataChanged.hasObservers()) {
-				// Вызываем refreshData(), который может бросить исключение
+		// Только если есть подписчики, обновляем данные немедленно
+		#if (threads || sys)
+		if (onDataChanged != null && onDataChanged.hasObservers()) {
+			// Вызываем refreshWhen(), чтобы поймать исключения оттуда
+			try {
+				var refreshObservable = refreshWhen();
 				refreshData();
+			} catch (e:Dynamic) {
+				// Если refreshWhen() бросил исключение, пробрасываем его
+				throw e;
 			}
-		} catch (e:Dynamic) {
-			// Если refreshWhen() или hasObservers() бросили исключение, пробрасываем его
-			throw e;
 		}
+		#end
 		// Если подписчиков нет, обновление будет отложено до вызова getData()
 		// или пока кто-нибудь не подпишется.
 	}
 
+	public function refreshData():Void {
+		#if (threads || sys)
+		lock.acquire();
+		#end
 
-		public function refreshData():Void {
-			#if (threads || sys)
-			// semaphore.acquire(); // Не захватываем семафор, так как он уже захвачен в getData()
-			#end
+		// ИСПРАВЛЕНИЕ: Правильная обработка исключений с try-finally вручную
+		var hasError = false;
+		var errorValue:Dynamic = null;
 
-			// ИСПРАВЛЕНИЕ: Правильная обработка исключений с try-finally вручную
-			var hasError = false;
-			var errorValue:Dynamic = null;
-
-			try {
-				// transform() может бросить исключение
-				cachedData = transform(dataSource);
-				needsUpdate = false;
-			} catch (e:Dynamic) {
-				// Сохраняем информацию об ошибке
-				hasError = true;
-				errorValue = e;
-			}
-
-			// Завершающие действия вне блока try
-			#if (threads || sys)
-			// semaphore.release(); // Не освобождаем семафор, так как он будет освобожден в getData()
-			#end
-
-			// Если была ошибка, пробрасываем её после освобождения ресурсов
-			if (hasError) {
-				throw errorValue;
-			}
-
-			// Уведомляем подписчиков о новом значении
-			// Используем правильное имя метода из RxHaxe Subject
-			onDataChanged.on_next(cachedData);
+		try {
+			// ИСПРАВЛЕНИЕ: Вызываем transform, который может бросить исключение
+			cachedData = transform(dataSource);
+			needsUpdate = false;
+		} catch (e:Dynamic) {
+			// Сохраняем информацию об ошибке
+			hasError = true;
+			errorValue = e;
 		}
 
-		/** 
-		 * The method to indicate when the computation should be updated. 
-		 * @return An observable trigger that should trigger when the computation should refresh. 
-		 */
-		public abstract function refreshWhen():Observable<Unit>;
+		#if (threads || sys)
+		lock.release();
+		#end
 
-		/** 
-		 * The method to generate the computed value from the data source. 
-		 * @param dataSource The source of data to work off. 
-		 * @return The transformed data. 
-		 */
-		public abstract function transform(dataSource:TInput):TOutput;
-
-		// Реализация Observable<TOutput>
-		public function subscribe(observer:rx.observers.IObserver<TOutput>):rx.disposables.ISubscription {
-			return onDataChanged.subscribe(observer);
+		// Если была ошибка во время refreshData(), пробрасываем её после освобождения ресурсов
+		if (hasError) {
+			throw errorValue;
 		}
 
-		// Реализация IComputed<TOutput>
-		public var value(get, null):TOutput;
+		// Уведомляем подписчиков о новом значении
+		// Используем правильное имя метода из RxHaxe Subject
+		onDataChanged.on_next(cachedData);
+	}
 
-		function get_value():TOutput {
-			return getData();
+	/** 
+	 * The method to indicate when the computation should be updated. 
+	 * @return An observable trigger that should trigger when the computation should refresh. 
+	 */
+	public abstract function refreshWhen():Observable<Unit>;
+
+	/** 
+	 * The method to generate the computed value from the data source. 
+	 * @param dataSource The source of data to work off. 
+	 * @return The transformed data. 
+	 */
+	public abstract function transform(dataSource:TInput):TOutput;
+
+	public function getData():TOutput {
+		if (needsUpdate) {
+			// refreshData() вызывает transform(), которое может бросить исключение
+			refreshData();
 		}
+		return cachedData;
+	}
 
-		public function dispose():Void {
-			#if (threads || sys)
-			lock.acquire();
-			#end
+	public function dispose():Void {
+		#if (threads || sys)
+		lock.acquire();
+		#end
 
-			// ИСПРАВЛЕНИЕ 8: Правильная обработка исключений с try-finally
-			var hasError = false;
-			var errorValue:Dynamic = null;
+		// ИСПРАВЛЕНИЕ: Правильная обработка исключений с try-finally вручную
+		var hasError = false;
+		var errorValue:Dynamic = null;
 
-			try {
-				// Отписываемся от всех подписок
-				for (subscription in subscriptions) {
-					if (subscription != null) {
-						subscription.unsubscribe();
-						// Используем правильное имя метода
-					}
+		try {
+			// Отписываемся от всех подписок
+			for (subscription in subscriptions) {
+				if (subscription != null) {
+					subscription.unsubscribe(); // Используем правильное имя метода
 				}
-				subscriptions.resize(0);
-
-				// Отписываем и уничтожаем Subject
-				if (onDataChanged != null) {
-					onDataChanged.on_completed();
-					// Завершаем Subject
-					// onDataChanged = null;
-					// Нельзя присвоить null final полю
-				}
-			} catch (e:Dynamic) {
-				hasError = true;
-				errorValue = e;
 			}
+			subscriptions.resize(0); // Очищаем массив
 
-			#if (threads || sys)
-			lock.release();
-			#end
-
-			// Если была ошибка, пробрасываем её после освобождения ресурсов
-			if (hasError) {
-				throw errorValue;
+			// Отписываем и уничтожаем Subject
+			if (onDataChanged != null) {
+				onDataChanged.on_completed(); // Завершаем Subject
+				// onDataChanged = null; // Нельзя присвоить null final полю
 			}
+		} catch (e:Dynamic) {
+			hasError = true;
+			errorValue = e;
 		}
+
+		#if (threads || sys)
+		lock.release();
+		#end
+
+		// Если была ошибка, пробрасываем её после освобождения ресурсов
+		if (hasError) {
+			throw errorValue;
+		}
+	}
 	#else
 	// Заглушка для платформ без поддержки
 	public var cachedData:TOutput;
@@ -233,8 +199,9 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> {
 		this.dataSource = dataSource;
 	}
 
-	public function getData():TOutput
-		return cast null;
+	public function subscribe(observer:rx.observers.IObserver<TOutput>):rx.disposables.ISubscription {
+		return null;
+	}
 
 	public function monitorChanges():Void {}
 
@@ -242,9 +209,8 @@ abstract class ComputedFromData<TOutput, TInput> implements IComputed<TOutput> {
 
 	public function refreshData():Void {}
 
-	public function subscribe(observer:rx.observers.IObserver<TOutput>):rx.disposables.ISubscription {
-		return null;
-	}
+	public function getData():TOutput
+		return cast null;
 
 	public abstract function refreshWhen():rx.Observable<systemsrx.computeds.Unit>;
 

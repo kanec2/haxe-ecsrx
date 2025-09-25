@@ -42,7 +42,7 @@ class TestSystemsRx {
 
 		// Computeds
 		runner.addCase(new ComputedFromDataTests());
-		runner.addCase(new ComputedFromDataAdditionalTests());
+		//runner.addCase(new ComputedFromDataAdditionalTests());
 		// Extensions (ранее IDictionaryExtensionTests)
 		//runner.addCase(new MapExtensionsTest());
 

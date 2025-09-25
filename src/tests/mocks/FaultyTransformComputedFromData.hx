@@ -6,27 +6,24 @@ import rx.Subject;
 import systemsrx.computeds.data.ComputedFromData;
 
 // Вспомогательный класс с ошибкой в transform
+// Вспомогательный класс с ошибкой в transform, которая бросается при вызове getData()
 class FaultyTransformComputedFromData extends ComputedFromData<Int, FaultyDataSource> {
 	public var manuallyRefresh:Subject<Unit>;
-	public var shouldThrow:Bool = false;
+	public var shouldThrowOnTransform:Bool = false;
 
-	public function new(dataSource:FaultyDataSource, throwexp:Bool = true) {
-        trace("FaultyTransformComputedFromData. Created");
-        shouldThrow = throwexp;
-		this.manuallyRefresh = new rx.Subject<Unit>();
+	public function new(dataSource:FaultyDataSource) {
+		this.manuallyRefresh = new rx.Subject<Unit>(); // Subject.create<Unit>()
 		super(dataSource);
 	}
 
 	public function refreshWhen():Observable<Unit> {
-        trace("FaultyTransformComputedFromData. Refresh when begin");
 		return manuallyRefresh;
 	}
 
 	public function transform(dataSource:FaultyDataSource):Int {
-        trace("FaultyTransformComputedFromData. Transform called. should throw is "+shouldThrow);
-		if (shouldThrow) {
-            trace("FaultyTransformComputedFromData. Err throwed");
-			throw "Transform error"; // Бросаем исключение, если shouldThrow=true
+		// ИСПРАВЛЕНИЕ: Бросаем исключение при вызове transform(), если shouldThrowOnTransform=true
+		if (shouldThrowOnTransform) {
+			throw "Transform error";
 		}
 		return dataSource.data;
 	}
