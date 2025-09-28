@@ -1,4 +1,4 @@
-package ecsrxe.collections.groups;
+package ecsrxe.collections;
 
 #if (threads || sys)
 import rx.Observable;
